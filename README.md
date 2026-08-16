@@ -9,7 +9,7 @@ Learn how neural networks, computer vision, and language models work from first 
 ## Progress
 
 - [x] Milestone 1: Single Perceptron
-- [ ] Milestone 2: Tiny Classifier
+- [x] Milestone 2: Tiny Classifier
 - [ ] Milestone 3: Multiple Neurons
 - [ ] Milestone 4: Teach The Network
 - [ ] Milestone 5: Backpropagation
@@ -41,7 +41,7 @@ Status:
 
 ---
 
-### Milestone 2: Tiny Classifier
+### Milestone 2: Tiny Classifier ✅
 
 Build a simple classifier using numerical inputs.
 
@@ -58,12 +58,8 @@ Research:
 - Sigmoid
 - ReLU
 
-Questions:
-- Why can't a neuron just be multiplication?
-- Why do we need activation functions?
-
 Status:
-- [ ] Not Started
+- [x] Complete
 
 ---
 
