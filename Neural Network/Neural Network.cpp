@@ -1,6 +1,6 @@
 // Neural Network.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//Milestone 2: Tiny classifies that classifies whether the given height & weight is human or not.
-//The solution is not correct as of now it doesn't classifies correctly whether the inputs are human or not
+//Milestone 3: Forward pass through a neural network with one hidden layer.
+//Weights and biases are manually chosen and not trained.
 
 #include <iostream>
 #include <math.h>
@@ -17,54 +17,55 @@ int main()
     //Inputs
     double x1; //Height in meter
     double x2; //Weight in kg
+    double x3; //age in years
 
     //Weights
-    double w1 = 2.0; // Height
-    double w2 = 4.0; // Weight
+    double w11 = 1.0; // Height
+    double w12 = 2.0; // Weight
+    double w13 = 3.0; // Age
+    double w21 = 1.0; // Height
+    double w22 = 2.0; // Weight
+    double w23 = 3.0; // Age
+    double w31 = 1.0; // Height
+    double w32 = 2.0; // Weight
+    double w33 = 3.0; // Age
 
-    //Bias
-    double bias = -50.0;
+    //Weights from hidden to output
+    double v1 = 2.0;
+    double v2 = 2.0;
+    double v3 = 2.0;
+
+    //Bias h = hidden layer o = output layer
+    double hb1 = -50.0;
+    double hb2 = -100.0;
+    double hb3 = 0.0;
+    double ob = 50.0;
 
     cout << "What's the height: ";
     cin >> x1;
     cout << "What's the weight: ";
     cin >> x2;
+    cout << "What's the age: ";
+    cin >> x3;
 
     //Sigmoid function
-    double X = (x1 * w1 + x2 * w2) + bias;
-    double sigmoid = Sigmoid(X);
-    
-    if (sigmoid < 0.5) {
-        cout << "This is not a human";
-    }
-    else if (sigmoid > 0.5) {
-        cout << "This is a human";
-    }
+    //h is hidden layer
+    double h1 = (x1 * w11 + x2 * w12 + x3 * w13 + hb1);
+    double h2 = (x1 * w21 + x2 * w22 + x3 * w23 + hb2);
+    double h3 = (x1 * w31 + x2 * w32 + x3 * w33 + hb3);
+    double Sh1 = Sigmoid(h1); //Sigmoid of hidden layer
+    double Sh2 = Sigmoid(h2); 
+    double Sh3 = Sigmoid(h3);
 
+    double output = (Sh1 * v1 + Sh2 * v2 + Sh3 * v3 + ob);
+    double So = Sigmoid(output); //Sigmoid of output
+   
+    cout << "Final Sigmoid: " << So << endl;
+
+    if (So < 0.5) {
+        cout << "Prediction(based on guessed weights): Not Human";
+    }
+    else if (So > 0.5) {
+        cout << "Prediction(based on guessed weights): Human";
+    }
 }
-
-/*Research:
-
-1)Binary Step Function:
-  ->Decides whether a neuron is activated or not
-  ->It can be False or True If the activation is <=0 or >0
-  ->It can't be used for multivalue or classification problems since it's binary(0 or 1)
-  ->It's gradient is 0 which is an hindrance for back propagation process
-
-2)ReLU (Rectified Linear Unit):
-  ->Returns 0 when the activation value is negative
-  ->Returns the activation value itself when it is positive
-  ->It introduces non-linearity into the neural network
-  ->It is computationally simple and fast to calculate
-  ->It helps reduce the vanishing gradient problem compared to Sigmoid
-  ->It is one of the most commonly used activation functions in modern neural networks
-
-3)Sigmoid Function:
-  ->Converts the activation value into a value between 0 and 1
-  ->It is useful for binary classification problems
-  ->The output can be interpreted as a probability/confidence score
-  ->It produces smooth and continuous outputs unlike the Binary Step Function
-  ->Large positive values move towards 1 while large negative values move towards 0
-  ->It can be used with backpropagation because it has a differentiable gradient
-
-*/

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Learn how neural networks, computer vision, and language models work from first principles without using high-level AI frameworks.
+Learn how neural networks, computer vision, and language models work from first principles without using high level AI frameworks.
 
 ---
 
@@ -10,7 +10,7 @@ Learn how neural networks, computer vision, and language models work from first 
 
 - [x] Milestone 1: Single Perceptron
 - [x] Milestone 2: Tiny Classifier
-- [ ] Milestone 3: Multiple Neurons
+- [x] Milestone 3: Multiple Neurons
 - [ ] Milestone 4: Teach The Network
 - [ ] Milestone 5: Backpropagation
 - [ ] Milestone 6: MNIST Digit Recognition
@@ -83,152 +83,22 @@ Concepts:
 - Multiple Neurons
 - Hidden Layers
 
+Built:
+
+- 3 input features
+- 1 hidden layer with 3 neurons
+- Sigmoid activation
+- 1 output neuron
+
+Learned:
+
+- Information flows from inputs to hidden neurons.
+- Hidden neurons produce intermediate outputs.
+- The output neuron combines hidden neuron outputs.
+- Manually chosen weights and biases do not produce meaningful predictions.
+- Neural networks require a way to measure error and update weights.
+
 Status:
-- [ ] Not Started
+- [x] Not Started
 
 ---
-
-### Milestone 4: Teach The Network
-
-Allow the network to measure its mistakes.
-
-Research:
-- Loss Functions
-- Mean Squared Error (MSE)
-- Cross Entropy
-
-Question:
-- How does the network know it is wrong?
-
-Status:
-- [ ] Not Started
-
----
-
-### Milestone 5: Backpropagation
-
-Teach the network how to improve itself.
-
-Research:
-- Gradient Descent
-- Backpropagation
-
-Question:
-- How do weights update themselves?
-
-Concepts:
-- Training
-- Optimization
-
-Status:
-- [ ] Not Started
-
----
-
-### Milestone 6: MNIST Digit Recognition
-
-Dataset:
-- MNIST
-
-Goal:
-
-Image
-↓
-Neural Network
-↓
-Digit Prediction
-
-Predict:
-- 0
-- 1
-- 2
-- ...
-- 9
-
-Status:
-- [ ] Not Started
-
----
-
-### Milestone 7: Convolutional Neural Networks (CNNs)
-
-Research:
-- Convolution
-- Pooling
-- CNNs
-
-Question:
-- Why are CNNs better at images?
-
-Concepts:
-- Feature Extraction
-- Spatial Information
-
-Status:
-- [ ] Not Started
-
----
-
-### Milestone 8: Cats vs Dogs Classifier
-
-Goal:
-
-Image
-↓
-CNN
-↓
-Cat or Dog
-
-Concepts:
-- Binary Classification
-- Image Recognition
-
-Status:
-- [ ] Not Started
-
----
-
-### Milestone 9: Language Models
-
-Build a character-level language model.
-
-Goal:
-
-"h"
-↓
-Predict Next Character
-
-Concepts:
-- Sequences
-- Probability
-- Text Generation
-
-Research:
-- Character Level Language Models
-
-Status:
-- [ ] Not Started
-
----
-
-### Milestone 10: Transformers
-
-Research:
-- Attention
-- Self-Attention
-- Transformers
-
-Concepts:
-- Context Understanding
-- Sequence Modeling
-
-Goal:
-- Build a Mini ChatGPT
-
-Status:
-- [ ] Not Started
-
-
-## Long-Term Goal
-
-Build a Mini ChatGPT completely from first principles while understanding every major concept along the way.
