@@ -99,6 +99,23 @@ Learned:
 - Neural networks require a way to measure error and update weights.
 
 Status:
-- [x] Not Started
+- [x] Complete
+
+---
+
+### Milestone 4
+
+Loss Functions
+because now you have a network that can actually make mistakes.
+
+Allow the network to measure its mistakes.
+
+Research:
+- Loss Functions
+- Mean Squared Error (MSE)
+- Cross Entropy
+
+Status:
+- [x] Complete
 
 ---
