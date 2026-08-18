@@ -1,8 +1,7 @@
 // Neural Network.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//Milestone 3: Loss Functions
+//Milestone 5: BackPropagation
 
-//Loss function is basically the output - true(value)
-//e.g; if we have 2 outputs 0 is Not human 1 is human and the output is 0.25 then the loss(e) will be e = output - true(1)
+//Function to reduce the loss as much as possible to achieve better and more prominent results 
 
 #include <iostream>
 #include <math.h>
@@ -18,12 +17,35 @@ double Sigmoid(double x) {
 int main()
 {
     //Loss function
-    double target = 1; // not human
+    double target = 0; // not human
     double loss;
+    double output_Unit_Error;
+    double h1_Unit_Error;
+    double h2_Unit_Error;
+    double h3_Unit_Error;
+
+    //Delta of Input weights
+    double delta_w11;
+    double delta_w12;
+    double delta_w13;
+    double delta_w21;
+    double delta_w22;
+    double delta_w23;
+    double delta_w31;
+    double delta_w32;
+    double delta_w33;
+
+    //Delta of Hidden weights
+    double delta_hv1;
+    double delta_hv2;
+    double delta_hv3;
+
+    //Learning rate
+    double learning_Rate = 0.2;
 
     //Inputs
-    double x1 = 1.89; //Height in meter 0-1
-    double x2 = 60; //Weight in kg 
+    double x1 = 1.69; //Height in meter 0-1
+    double x2 = 10; //Weight in kg 
     double x3 = 15; //age in years
     
     double x1_Norm = (x1 - 0.5) / (2.5 - 0.5);
@@ -48,31 +70,74 @@ int main()
 
     //Bias h = hidden layer o = output layer
     double hb1 = -0.5;
-    double hb2 = 0.2;
-    double hb3 = -0.3;
     double ob = -0.5;
 
-    //Sigmoid function
-    //h is hidden layer
-    double h1 = (x1_Norm * w11 + x2_Norm * w12 + x3_Norm * w13 + hb1);
-    double h2 = (x1_Norm * w21 + x2_Norm * w22 + x3_Norm * w23 + hb2);
-    double h3 = (x1_Norm * w31 + x2_Norm * w32 + x3_Norm * w33 + hb3);
-    double Sh1 = Sigmoid(h1); //Sigmoid of hidden layer
-    double Sh2 = Sigmoid(h2); 
-    double Sh3 = Sigmoid(h3);
+    //Initalize layers
+    double h1;
+    double h2;
+    double h3;
+    double Sh1;
+    double Sh2;
+    double Sh3;
 
-    double output = (Sh1 * v1 + Sh2 * v2 + Sh3 * v3 + ob);
-    double So = Sigmoid(output); //Sigmoid of output
-   
-    cout << "Prediction: " << So << endl;
-    loss = target - So;
-    cout << "Error: " << loss << endl;
-    cout << "MSE: " << pow(loss, 2) << endl;
+    //Output
+    double output;
+    double So;
 
-    if (So < 0.5) {
-        cout << "Prediction(based on guessed weights): Not Human";
+    for (int epoch = 0; epoch <= 1000; epoch++) {
+
+        //Sigmoid function
+        h1 = (x1_Norm * w11 + x2_Norm * w12 + x3_Norm * w13 + hb1);
+        h2 = (x1_Norm * w21 + x2_Norm * w22 + x3_Norm * w23 + hb1);
+        h3 = (x1_Norm * w31 + x2_Norm * w32 + x3_Norm * w33 + hb1);
+        Sh1 = Sigmoid(h1); //Sigmoid of hidden layer
+        Sh2 = Sigmoid(h2);
+        Sh3 = Sigmoid(h3);
+
+        output = (Sh1 * v1 + Sh2 * v2 + Sh3 * v3 + ob);
+        So = Sigmoid(output); //Sigmoid of output
+        loss = target - So;
+
+        //Iterations to train the network
+        if (epoch % 100 == 0) {
+            cout << "Epoch: " << epoch << " Prediction: " << So << " MSE: " << pow(loss, 2) << endl;
+        }
+
+        //Output unit error
+        output_Unit_Error = So * (1.0 - So) * loss;
+        //Hidden unit error
+        h1_Unit_Error = Sh1 * (1 - Sh1) * (v1 * output_Unit_Error);
+        h2_Unit_Error = Sh2 * (1 - Sh2) * (v2 * output_Unit_Error);
+        h3_Unit_Error = Sh3 * (1 - Sh3) * (v3 * output_Unit_Error);
+        //Delta of hidden layer to output layer
+        delta_hv1 = learning_Rate * (output_Unit_Error)*Sh1;
+        delta_hv2 = learning_Rate * (output_Unit_Error)*Sh2;
+        delta_hv3 = learning_Rate * (output_Unit_Error)*Sh3;
+        //Delta of Input layer to hidden layer
+        delta_w11 = learning_Rate * (h1_Unit_Error)*x1;
+        delta_w12 = learning_Rate * (h1_Unit_Error)*x1;
+        delta_w13 = learning_Rate * (h1_Unit_Error)*x1;
+        delta_w21 = learning_Rate * (h2_Unit_Error)*x2;
+        delta_w22 = learning_Rate * (h2_Unit_Error)*x2;
+        delta_w23 = learning_Rate * (h2_Unit_Error)*x2;
+        delta_w31 = learning_Rate * (h3_Unit_Error)*x3;
+        delta_w32 = learning_Rate * (h3_Unit_Error)*x3;
+        delta_w33 = learning_Rate * (h3_Unit_Error)*x3;
+        //Updating weights of hidden to output layers
+        v1 = delta_hv1 + v1;
+        v2 = delta_hv2 + v2;
+        v3 = delta_hv3 + v3;
+        //Updating weights of input to hidden layers
+        w11 = delta_w11 + w11;
+        w12 = delta_w12 + w12;
+        w13 = delta_w13 + w13;
+        w21 = delta_w21 + w21;
+        w22 = delta_w22 + w22;
+        w23 = delta_w23 + w23;
+        w31 = delta_w31 + w31;
+        w32 = delta_w32 + w32;
+        w33 = delta_w33 + w33;
+
     }
-    else if (So > 0.5) {
-        cout << "Prediction(based on guessed weights): Human";
-    }
+
 }

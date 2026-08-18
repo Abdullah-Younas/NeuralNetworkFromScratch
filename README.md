@@ -11,13 +11,14 @@ Learn how neural networks, computer vision, and language models work from first 
 - [x] Milestone 1: Single Perceptron
 - [x] Milestone 2: Tiny Classifier
 - [x] Milestone 3: Multiple Neurons
-- [ ] Milestone 4: Teach The Network
-- [ ] Milestone 5: Backpropagation
-- [ ] Milestone 6: MNIST Digit Recognition
-- [ ] Milestone 7: CNNs
-- [ ] Milestone 8: Cats vs Dogs
-- [ ] Milestone 9: Language Models
-- [ ] Milestone 10: Transformers
+- [x] Milestone 4: Teach The Network
+- [x] Milestone 5: Backpropagation
+- [ ] Milestone 6: Train Neural Network On Real Dataset
+- [ ] Milestone 7: MNIST Digit Recognition
+- [ ] Milestone 8: CNNs
+- [ ] Milestone 9: Cats vs Dogs
+- [ ] Milestone 10: Language Models
+- [ ] Milestone 11: Transformers
 
 ---
 
@@ -103,9 +104,8 @@ Status:
 
 ---
 
-### Milestone 4
+### Milestone 4 - Loss Functions
 
-Loss Functions
 because now you have a network that can actually make mistakes.
 
 Allow the network to measure its mistakes.
@@ -114,6 +114,35 @@ Research:
 - Loss Functions
 - Mean Squared Error (MSE)
 - Cross Entropy
+
+Status:
+- [x] Complete
+
+---
+
+## Milestone 5 - Backpropagation
+
+Implemented backpropagation from scratch in C++.
+
+Features:
+- Feed forward neural network
+- Sigmoid activation
+- Mean Squared Error (MSE)
+- Error propagation through hidden layers
+- Weight updates using gradient descent
+
+Results:
+
+Epoch 0
+Prediction: 0.619406
+MSE: 0.383664
+
+Epoch 1000
+Prediction: 0.0501419
+MSE: 0.00251421
+
+Observation:
+The network successfully reduced prediction error over multiple epochs, demonstrating learning through weight updates.
 
 Status:
 - [x] Complete
