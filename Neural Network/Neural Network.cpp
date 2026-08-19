@@ -1,9 +1,10 @@
-// Neural Network.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//Milestone 5: BackPropagation
-
-//Function to reduce the loss as much as possible to achieve better and more prominent results 
+// Neural Network.cpp
+// Milestone 6: Train Neural Network On Real Dataset
+// TrainingDataHumanClassifier
 
 #include <iostream>
+#include <filesystem>
+#include <fstream>
 #include <math.h>
 #include <numbers>
 #include <algorithm>
@@ -16,8 +17,22 @@ double Sigmoid(double x) {
 
 int main()
 {
+
+    //Training Data
+    ifstream file("TrainingDataHumanClassifier.txt");
+
+    if (!file)
+    {
+        cout << std::filesystem::current_path() << endl;
+        cout << "Failed to open file!" << endl;
+        return 1;
+    }
+
+    double height, weight, age, targett;
+    file >> height >> weight >> age >> targett;
+
     //Loss function
-    double target = 0; // not human
+    double target = targett; // not human
     double loss;
     double output_Unit_Error;
     double h1_Unit_Error;
@@ -44,9 +59,9 @@ int main()
     double learning_Rate = 0.2;
 
     //Inputs
-    double x1 = 1.69; //Height in meter 0-1
-    double x2 = 10; //Weight in kg 
-    double x3 = 15; //age in years
+    double x1 = height; //Height in meter 0-1
+    double x2 = weight; //Weight in kg 
+    double x3 = age; //age in years
     
     double x1_Norm = (x1 - 0.5) / (2.5 - 0.5);
     double x2_Norm = (x2 - 3) / (120 - 3);
