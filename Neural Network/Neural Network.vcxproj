@@ -142,7 +142,9 @@
     <ClCompile Include="Neural Network.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="Biases.txt" />
     <Text Include="TrainingDataHumanClassifier.txt" />
+    <Text Include="Weights.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

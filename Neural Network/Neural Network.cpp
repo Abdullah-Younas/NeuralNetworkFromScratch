@@ -1,158 +1,297 @@
-// Neural Network.cpp
-// Milestone 6: Train Neural Network On Real Dataset
-// TrainingDataHumanClassifier
-
 #include <iostream>
 #include <filesystem>
 #include <fstream>
-#include <math.h>
-#include <numbers>
-#include <algorithm>
+#include <cmath>
+#include <vector>
 
 using namespace std;
 
-double Sigmoid(double x) {
-    return 1.0 / (1.0 + std::exp(-x));
+double Sigmoid(double x)
+{
+    return 1.0 / (1.0 + exp(-x));
 }
 
 int main()
 {
+    // Load weights
 
-    //Training Data
-    ifstream file("TrainingDataHumanClassifier.txt");
+    ifstream file2("Weights.txt");
 
-    if (!file)
+    if (!file2)
     {
-        cout << std::filesystem::current_path() << endl;
-        cout << "Failed to open file!" << endl;
+        cout << filesystem::current_path() << endl;
+        cout << "Failed to open Weights.txt!" << endl;
         return 1;
     }
 
-    double height, weight, age, targett;
-    file >> height >> weight >> age >> targett;
+    vector<double> Nweights;
+    double value;
 
-    //Loss function
-    double target = targett; // not human
-    double loss;
-    double output_Unit_Error;
-    double h1_Unit_Error;
-    double h2_Unit_Error;
-    double h3_Unit_Error;
+    while (file2 >> value)
+    {
+        Nweights.push_back(value);
+    }
 
-    //Delta of Input weights
-    double delta_w11;
-    double delta_w12;
-    double delta_w13;
-    double delta_w21;
-    double delta_w22;
-    double delta_w23;
-    double delta_w31;
-    double delta_w32;
-    double delta_w33;
+    file2.close();
 
-    //Delta of Hidden weights
-    double delta_hv1;
-    double delta_hv2;
-    double delta_hv3;
+    if (Nweights.size() < 12)
+    {
+        cout << "Weights.txt must contain at least 12 weights!" << endl;
+        return 1;
+    }
 
-    //Learning rate
-    double learning_Rate = 0.2;
+    // Input -> Hidden weights
+    double w11 = Nweights[0];
+    double w12 = Nweights[1];
+    double w13 = Nweights[2];
 
-    //Inputs
-    double x1 = height; //Height in meter 0-1
-    double x2 = weight; //Weight in kg 
-    double x3 = age; //age in years
-    
-    double x1_Norm = (x1 - 0.5) / (2.5 - 0.5);
-    double x2_Norm = (x2 - 3) / (120 - 3);
-    double x3_Norm = x3 / 100.0;
+    double w21 = Nweights[3];
+    double w22 = Nweights[4];
+    double w23 = Nweights[5];
 
-    //Weights
-    double w11 = 0.5; // Height
-    double w12 = 0.9; // Weight
-    double w13 = 0.6; // Age
-    double w21 = 0.4; // Height
-    double w22 = 0.8; // Weight
-    double w23 = 0.7; // Age
-    double w31 = 0.7; // Height
-    double w32 = 0.5; // Weight
-    double w33 = 0.6; // Age
+    double w31 = Nweights[6];
+    double w32 = Nweights[7];
+    double w33 = Nweights[8];
 
-    //Weights from hidden to output
-    double v1 = 0.7;
-    double v2 = 0.4;
-    double v3 = 0.9;
+    // Hidden -> Output weights
+    double v1 = Nweights[9];
+    double v2 = Nweights[10];
+    double v3 = Nweights[11];
 
-    //Bias h = hidden layer o = output layer
+    // Biases
+
     double hb1 = -0.5;
     double ob = -0.5;
 
-    //Initalize layers
-    double h1;
-    double h2;
-    double h3;
-    double Sh1;
-    double Sh2;
-    double Sh3;
+    // Learning rate
+    double learning_Rate = 0.2;
 
-    //Output
-    double output;
-    double So;
+    // Training
+    const int epochs = 1000;
 
-    for (int epoch = 0; epoch <= 1000; epoch++) {
+    for (int epoch = 0; epoch < epochs; epoch++)
+    {
+        // Open the dataset at the beginning
+        // of every epoch.
+        ifstream file("TrainingDataHumanClassifier.txt");
 
-        //Sigmoid function
-        h1 = (x1_Norm * w11 + x2_Norm * w12 + x3_Norm * w13 + hb1);
-        h2 = (x1_Norm * w21 + x2_Norm * w22 + x3_Norm * w23 + hb1);
-        h3 = (x1_Norm * w31 + x2_Norm * w32 + x3_Norm * w33 + hb1);
-        Sh1 = Sigmoid(h1); //Sigmoid of hidden layer
-        Sh2 = Sigmoid(h2);
-        Sh3 = Sigmoid(h3);
-
-        output = (Sh1 * v1 + Sh2 * v2 + Sh3 * v3 + ob);
-        So = Sigmoid(output); //Sigmoid of output
-        loss = target - So;
-
-        //Iterations to train the network
-        if (epoch % 100 == 0) {
-            cout << "Epoch: " << epoch << " Prediction: " << So << " MSE: " << pow(loss, 2) << endl;
+        if (!file)
+        {
+            cout << filesystem::current_path() << endl;
+            cout << "Failed to open TrainingDataHumanClassifier.txt!" << endl;
+            return 1;
         }
 
-        //Output unit error
-        output_Unit_Error = So * (1.0 - So) * loss;
-        //Hidden unit error
-        h1_Unit_Error = Sh1 * (1 - Sh1) * (v1 * output_Unit_Error);
-        h2_Unit_Error = Sh2 * (1 - Sh2) * (v2 * output_Unit_Error);
-        h3_Unit_Error = Sh3 * (1 - Sh3) * (v3 * output_Unit_Error);
-        //Delta of hidden layer to output layer
-        delta_hv1 = learning_Rate * (output_Unit_Error)*Sh1;
-        delta_hv2 = learning_Rate * (output_Unit_Error)*Sh2;
-        delta_hv3 = learning_Rate * (output_Unit_Error)*Sh3;
-        //Delta of Input layer to hidden layer
-        delta_w11 = learning_Rate * (h1_Unit_Error)*x1;
-        delta_w12 = learning_Rate * (h1_Unit_Error)*x1;
-        delta_w13 = learning_Rate * (h1_Unit_Error)*x1;
-        delta_w21 = learning_Rate * (h2_Unit_Error)*x2;
-        delta_w22 = learning_Rate * (h2_Unit_Error)*x2;
-        delta_w23 = learning_Rate * (h2_Unit_Error)*x2;
-        delta_w31 = learning_Rate * (h3_Unit_Error)*x3;
-        delta_w32 = learning_Rate * (h3_Unit_Error)*x3;
-        delta_w33 = learning_Rate * (h3_Unit_Error)*x3;
-        //Updating weights of hidden to output layers
-        v1 = delta_hv1 + v1;
-        v2 = delta_hv2 + v2;
-        v3 = delta_hv3 + v3;
-        //Updating weights of input to hidden layers
-        w11 = delta_w11 + w11;
-        w12 = delta_w12 + w12;
-        w13 = delta_w13 + w13;
-        w21 = delta_w21 + w21;
-        w22 = delta_w22 + w22;
-        w23 = delta_w23 + w23;
-        w31 = delta_w31 + w31;
-        w32 = delta_w32 + w32;
-        w33 = delta_w33 + w33;
+        double totalLoss = 0.0;
+        int dataCount = 0;
 
+        // Go through EVERY person
+
+        double height;
+        double weight;
+        double age;
+        double target;
+
+        char comma;
+
+        while (file >> height >> comma
+            >> weight >> comma
+            >> age >> comma
+            >> target)
+        {
+            // Normalize inputs
+
+            double x1 = (height - 0.5) / (2.5 - 0.5);
+            double x2 = (weight - 3.0) / (120.0 - 3.0);
+            double x3 = age / 100.0;
+
+            // Forward pass
+
+            double h1 =
+                x1 * w11 +
+                x2 * w12 +
+                x3 * w13 +
+                hb1;
+
+            double h2 =
+                x1 * w21 +
+                x2 * w22 +
+                x3 * w23 +
+                hb1;
+
+            double h3 =
+                x1 * w31 +
+                x2 * w32 +
+                x3 * w33 +
+                hb1;
+
+            double Sh1 = Sigmoid(h1);
+            double Sh2 = Sigmoid(h2);
+            double Sh3 = Sigmoid(h3);
+
+            double output =
+                Sh1 * v1 +
+                Sh2 * v2 +
+                Sh3 * v3 +
+                ob;
+
+            double So = Sigmoid(output);
+
+            // Loss
+
+            double loss = target - So;
+
+            totalLoss += loss * loss;
+            dataCount++;
+
+            // Backpropagation
+
+            double output_Unit_Error =
+                So * (1.0 - So) * loss;
+
+            double h1_Unit_Error =
+                Sh1 * (1.0 - Sh1) *
+                (v1 * output_Unit_Error);
+
+            double h2_Unit_Error =
+                Sh2 * (1.0 - Sh2) *
+                (v2 * output_Unit_Error);
+
+            double h3_Unit_Error =
+                Sh3 * (1.0 - Sh3) *
+                (v3 * output_Unit_Error);
+
+            // Hidden -> Output
+
+            double delta_v1 =
+                learning_Rate *
+                output_Unit_Error *
+                Sh1;
+
+            double delta_v2 =
+                learning_Rate *
+                output_Unit_Error *
+                Sh2;
+
+            double delta_v3 =
+                learning_Rate *
+                output_Unit_Error *
+                Sh3;
+
+            // Input -> Hidden
+
+            double delta_w11 =
+                learning_Rate *
+                h1_Unit_Error *
+                x1;
+
+            double delta_w12 =
+                learning_Rate *
+                h1_Unit_Error *
+                x2;
+
+            double delta_w13 =
+                learning_Rate *
+                h1_Unit_Error *
+                x3;
+
+
+            double delta_w21 =
+                learning_Rate *
+                h2_Unit_Error *
+                x1;
+
+            double delta_w22 =
+                learning_Rate *
+                h2_Unit_Error *
+                x2;
+
+            double delta_w23 =
+                learning_Rate *
+                h2_Unit_Error *
+                x3;
+
+
+            double delta_w31 =
+                learning_Rate *
+                h3_Unit_Error *
+                x1;
+
+            double delta_w32 =
+                learning_Rate *
+                h3_Unit_Error *
+                x2;
+
+            double delta_w33 =
+                learning_Rate *
+                h3_Unit_Error *
+                x3;
+
+            // Update weights
+
+            v1 += delta_v1;
+            v2 += delta_v2;
+            v3 += delta_v3;
+
+            w11 += delta_w11;
+            w12 += delta_w12;
+            w13 += delta_w13;
+
+            w21 += delta_w21;
+            w22 += delta_w22;
+            w23 += delta_w23;
+
+            w31 += delta_w31;
+            w32 += delta_w32;
+            w33 += delta_w33;
+        }
+
+        file.close();
+
+        // Print epoch information
+
+        if (epoch % 10 == 0)
+        {
+            double averageLoss = totalLoss / dataCount;
+
+            cout << "Epoch: "
+                << epoch
+                << " Average MSE: "
+                << averageLoss
+                << endl;
+        }
     }
 
+    // Save updated weights
+
+    ofstream weightFile("Weights.txt");
+
+    if (!weightFile)
+    {
+        cout << "Failed to save Weights.txt!" << endl;
+        return 1;
+    }
+
+    weightFile << w11 << endl;
+    weightFile << w12 << endl;
+    weightFile << w13 << endl;
+
+    weightFile << w21 << endl;
+    weightFile << w22 << endl;
+    weightFile << w23 << endl;
+
+    weightFile << w31 << endl;
+    weightFile << w32 << endl;
+    weightFile << w33 << endl;
+
+    weightFile << v1 << endl;
+    weightFile << v2 << endl;
+    weightFile << v3 << endl;
+
+    weightFile.close();
+
+    cout << "Training complete!" << endl;
+    cout << "Updated weights saved to Weights.txt" << endl;
+
+    return 0;
 }

@@ -147,4 +147,66 @@ The network successfully reduced prediction error over multiple epochs, demonstr
 Status:
 - [x] Complete
 
+## Milestone Train Neural Network On Real Dataset
+
+Milestone 6A: Dataset
+
+Create a text file:
+
+height,weight,age,target
+1.80,75,20,1
+1.65,55,18,1
+0.40,4,1,0
+2.90,10,15,0
+
+Then read it in C++.
+
+Milestone 6B: Train On Multiple Samples
+
+Currently:
+
+x1 = 1.69;
+x2 = 10;
+x3 = 15;
+
+Hardcoded.
+
+Instead:
+
+for each person in dataset
+{
+forward pass
+calculate loss
+backprop
+update weights
+}
+
+This is the first time your network learns from data instead of a single example.
+
+Milestone 6C: Save Weights
+
+Example file:
+w11=0.43
+w12=0.88
+w13=0.52
+w21=0.35
+...
+After training:
+
+ofstream file("weights.txt");
+
+Write all weights.
+
+Milestone 6D: Load Weights
+
+At startup:
+ifstream file("weights.txt");
+Read weights.
+
+If file doesn't exist:
+use default/random weights
+
+Status:
+- [x] Complete
+
 ---
