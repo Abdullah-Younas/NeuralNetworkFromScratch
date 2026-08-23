@@ -146,6 +146,12 @@
     <Text Include="TrainingDataHumanClassifier.txt" />
     <Text Include="Weights.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="t10k-images-idx3-ubyte" />
+    <None Include="t10k-labels-idx1-ubyte" />
+    <None Include="train-images-idx3-ubyte" />
+    <None Include="train-labels-idx1-ubyte" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

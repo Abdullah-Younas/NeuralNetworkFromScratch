@@ -28,4 +28,18 @@
       <Filter>Source Files</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="t10k-images-idx3-ubyte">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="t10k-labels-idx1-ubyte">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="train-images-idx3-ubyte">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="train-labels-idx1-ubyte">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

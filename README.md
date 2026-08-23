@@ -164,4 +164,19 @@ The network trained this way performs with extreme probability and produces almo
 Status:
 - [x] Complete
 
+## Milestone 7 Completed - MNIST Neural Network C++
+
+Built and trained a neural network from scratch in C++ on MNIST.
+
+Features:
+- 60,000 training images & 10,000 test images
+- 784 → 128 → 10 architecture
+- 97.1% test accuracy
+
+Observation: It takes ~1 hour for 10 epochs. 10,000 epochs would take ~ 42 DAYS 💀
+God damn
+
+Status:
+- [x] Complete
+
 ---
