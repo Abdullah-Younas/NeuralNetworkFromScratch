@@ -42,4 +42,14 @@
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="test.cuh">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="test.cu">
+      <Filter>Source Files</Filter>
+    </CudaCompile>
+  </ItemGroup>
 </Project>

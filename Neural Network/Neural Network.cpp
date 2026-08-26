@@ -3,7 +3,7 @@
 #include <fstream>
 #include <cmath>
 #include <vector>
-#include <cstdint>
+#include <cstdint> 
 
 using namespace std;
 
@@ -324,6 +324,31 @@ double Sigmoid(double x)
     return 1.0 / (1.0 + exp(-x));
 }
 
+vector<double> Softmax(const vector<double>& logits,
+    double temperature = 1.0)
+{
+    vector<double> probabilities(logits.size());
+
+    double maxLogit =
+        *max_element(logits.begin(), logits.end());
+
+    double sum = 0.0;
+
+    for (double x : logits)
+    {
+        sum += exp((x - maxLogit) / temperature);
+    }
+
+    for (int i = 0; i < logits.size(); i++)
+    {
+        probabilities[i] =
+            exp((logits[i] - maxLogit) / temperature)
+            / sum;
+    }
+
+    return probabilities;
+}
+
 void LoadWeights(string FileName, int input, int hidden, int output)
 {
     ifstream file(FileName);
@@ -465,8 +490,10 @@ void TrainingMNISTNeuralNetwork(
     LoadTrainingDataMNIST();
     LoadTrainingDataLabelsMNIST();
 
+
     for (int epoch = 0; epoch < NumOfEpochs; epoch++)
     {
+        int correct = 0;
         double totalLoss = 0.0;
         int dataCount = 0;
 
@@ -543,18 +570,23 @@ void TrainingMNISTNeuralNetwork(
                         weightsHiddenOutput[o][h];
                 }
 
-                outputs[o] =
-                    Sigmoid(outputs[o]);
             }
+            outputs = Softmax(outputs, 1.0);
 
+            int prediction =
+                max_element(outputs.begin(), outputs.end())
+                - outputs.begin();
+
+            if (prediction == label)
+            {
+                correct++;
+            }
 
             // Loss
             for (int o = 0; o < outputLayerSize; o++)
             {
-                double loss =
-                    target[o] - outputs[o];
-
-                totalLoss += loss * loss;
+                totalLoss +=
+                    -target[o] * log(outputs[o] + 1e-15);
             }
 
             dataCount++;
@@ -564,13 +596,8 @@ void TrainingMNISTNeuralNetwork(
             // Output errors
             for (int o = 0; o < outputLayerSize; o++)
             {
-                double loss =
-                    target[o] - outputs[o];
-
                 output_Unit_Error[o] =
-                    outputs[o] *
-                    (1.0 - outputs[o]) *
-                    loss;
+                    target[o] - outputs[o];
             }
 
 
@@ -644,13 +671,17 @@ void TrainingMNISTNeuralNetwork(
         if (epoch % 1 == 0)
         {
             double averageLoss =
-                totalLoss /
-                (dataCount * outputLayerSize);
+                totalLoss / dataCount;
+
+            double accuracy =
+                100.0 * correct / dataCount;
 
             cout << "Epoch: "
                 << epoch
-                << " | Average MSE: "
+                << " | Average Cross Entropy: "
                 << averageLoss
+                << " | Accuracy: "
+                << accuracy
                 << endl;
         }
     }
@@ -725,10 +756,9 @@ void PredictingMode(
                 hiddenSigmoid[h] *
                 weightsHiddenOutput[o][h];
         }
-
-        outputs[o] =
-            Sigmoid(outputs[o]);
     }
+
+    outputs = Softmax(outputs, 1.0);
 
 
     // =========================
@@ -816,15 +846,18 @@ void TestMNISTNeuralNetwork(
 
         for (int o = 0; o < outputLayerSize; o++)
         {
-            outputs[o] = biasesOutput[o];
+            outputs[o] =
+                biasesOutput[o];
 
             for (int h = 0; h < hiddenLayerSize; h++)
             {
-                outputs[o] += hiddenSigmoid[h] * weightsHiddenOutput[o][h];
+                outputs[o] +=
+                    hiddenSigmoid[h] *
+                    weightsHiddenOutput[o][h];
             }
-
-            outputs[o] = Sigmoid(outputs[o]);
         }
+
+        outputs = Softmax(outputs, 1.0);
 
         // Find highest probability
 
@@ -881,10 +914,10 @@ void TestMNISTNeuralNetwork(
 
 int main()
 {
-    // Layers
 
-    int input = 784;
-    int hidden = 128;
+    // Layers
+    int input = 784; // K
+    int hidden = 128; // N
     int output = 10;
 
     int Mode;
@@ -985,7 +1018,6 @@ int main()
     else {
         cout << "Unknown Mode";
     }
-
     return 0;
 }
 
