@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 #include <filesystem>
 #include <fstream>
 #include <cmath>
@@ -7,1017 +8,249 @@
 
 using namespace std;
 
-vector<vector<int>> TrainingImagesData;
-vector<int> TrainingImagesLabels;
+vector<vector<vector<float>>> TrainingImagesData;
 
-vector<vector<int>> TestImagesData;
-vector<int> TestImagesLabels;
+vector<vector<float>> C1Filter1(5, vector<float>(5));
+vector<vector<float>> C1Filter2(5, vector<float>(5));
 
-vector<vector<double>> weightsInputHidden;
-vector<vector<double>> weightsHiddenOutput;
+vector<vector<vector<vector<float>>>> C2Filters(4, vector<vector<vector<float>>>(2,vector<vector<float>>(3,vector<float>(3))));
 
-vector<double> biasesHidden;
-vector<double> biasesOutput;
+vector<vector<float>> C1Image1(24, vector<float>(24));
+vector<vector<float>> C1Image2(24, vector<float>(24));
 
-uint32_t swapEndian32(uint32_t val) {
-    return ((val >> 24) & 0xff) |
-        ((val << 8) & 0xff0000) |
-        ((val >> 8) & 0xff00) |
-        ((val << 24) & 0xff000000);
-}
+vector<vector<float>> C1Image1Pooled(12, vector<float>(12));
+vector<vector<float>> C1Image2Pooled(12, vector<float>(12));
 
-void LoadTrainingDataMNIST()
+vector<vector<float>> C2Image1(10, vector<float>(10));
+vector<vector<float>> C2Image2(10, vector<float>(10));
+vector<vector<float>> C2Image3(10, vector<float>(10));
+vector<vector<float>> C2Image4(10, vector<float>(10));
+
+vector<vector<float>> C2Image1Pooled(5, vector<float>(5));
+vector<vector<float>> C2Image2Pooled(5, vector<float>(5));
+vector<vector<float>> C2Image3Pooled(5, vector<float>(5));
+vector<vector<float>> C2Image4Pooled(5, vector<float>(5));
+
+vector<float> FlatPixelValues(100);
+
+void LoadTrainingDataMNIST(int imgsToLoad)
 {
-    std::ifstream file("train-images-idx3-ubyte", std::ios::binary);
+    ifstream file("train-images-idx3-ubyte", ios::binary);
 
     if (!file.is_open())
     {
-        std::cerr << "Failed to open the .idx file." << std::endl;
+        cout << "Failed to open MNIST file!" << endl;
         return;
     }
 
-    // 1. Read the 4-byte Magic Number
-    uint8_t magic[4];
-    file.read(reinterpret_cast<char*>(magic), 4);
+    cout << "MNIST file opened!" << endl;
 
-    if (magic[0] != 0 || magic[1] != 0)
+    file.seekg(16); // Skip MNIST header
+
+    int images = imgsToLoad;
+
+    TrainingImagesData.resize(images, vector<vector<float>>(
+        28, vector<float>(28)
+    ));
+
+    for (int i = 0; i < images; i++)
     {
-        std::cerr << "Invalid .idx file format." << std::endl;
-        return;
-    }
-
-    uint8_t dataType = magic[2];
-    uint8_t numDimensions = magic[3];
-
-    // 2. Read dimension sizes
-    std::vector<uint32_t> dimSizes(numDimensions);
-    size_t totalElements = 1;
-
-    for (int i = 0; i < numDimensions; ++i)
-    {
-        uint32_t size;
-
-        file.read(reinterpret_cast<char*>(&size), 4);
-
-        size = swapEndian32(size);
-
-        dimSizes[i] = size;
-        totalElements *= size;
-
-    }
-
-    // 3. Read image data
-    if (dataType == 0x08)
-    {
-        std::vector<uint8_t> dataBuffer(totalElements);
-
-        file.read(
-            reinterpret_cast<char*>(dataBuffer.data()),
-            totalElements
-        );
-
-        if (file.gcount() != totalElements)
+        for (int r = 0; r < 28; r++)
         {
-            std::cerr << "Warning: Could not read all expected elements."
-                << std::endl;
-        }
-
-        // Number of images
-        size_t numberOfImages = dimSizes[0];
-
-        // Pixels per image
-        size_t pixelsPerImage = dimSizes[1] * dimSizes[2];
-
-        // Create storage
-        TrainingImagesData.resize(numberOfImages);
-
-        for (size_t image = 0; image < numberOfImages; ++image)
-        {
-            TrainingImagesData[image].resize(pixelsPerImage);
-
-            for (size_t pixel = 0; pixel < pixelsPerImage; ++pixel)
+            for (int c = 0; c < 28; c++)
             {
-                TrainingImagesData[image][pixel] =
-                    static_cast<int>(
-                        dataBuffer[image * pixelsPerImage + pixel]
-                        );
-            }
-        }
+                unsigned char pixel;
+                file.read((char*)&pixel, 1);
 
-    }
-    else
-    {
-        std::cout << "Unsupported data type." << std::endl;
-    }
-
-    file.close();
-}
-
-void LoadTrainingDataLabelsMNIST()
-{
-    std::ifstream file(
-        "train-labels-idx1-ubyte",
-        std::ios::binary
-    );
-
-    if (!file.is_open())
-    {
-        std::cerr << "Error: Could not open label file."
-            << std::endl;
-        return;
-    }
-
-    // 1. Read header
-    uint32_t magic_number = 0;
-    uint32_t num_items = 0;
-
-    file.read(
-        reinterpret_cast<char*>(&magic_number),
-        sizeof(magic_number)
-    );
-
-    file.read(
-        reinterpret_cast<char*>(&num_items),
-        sizeof(num_items)
-    );
-
-    // 2. Convert Big-Endian → Little-Endian
-    magic_number = swapEndian32(magic_number);
-    num_items = swapEndian32(num_items);
-
-    // 3. Validate
-    if (magic_number != 2049)
-    {
-        std::cerr << "Error: Invalid MNIST label file."
-            << std::endl;
-        return;
-    }
-
-    // 4. Resize our global label vector
-    TrainingImagesLabels.resize(num_items);
-
-    // 5. Read labels directly
-    std::vector<uint8_t> labels(num_items);
-
-    file.read(
-        reinterpret_cast<char*>(labels.data()),
-        num_items
-    );
-
-    // 6. Copy into TrainingImagesLabels
-    for (size_t i = 0; i < num_items; ++i)
-    {
-        TrainingImagesLabels[i] =
-            static_cast<int>(labels[i]);
-    }
-
-
-    file.close();
-}
-
-void LoadTestDataMNIST()
-{
-    ifstream file("t10k-images-idx3-ubyte", ios::binary);
-
-    if (!file.is_open())
-    {
-        cout << "Failed to open test images!" << endl;
-        return;
-    }
-
-    uint8_t magic[4];
-    file.read(reinterpret_cast<char*>(magic), 4);
-
-    uint8_t dataType = magic[2];
-    uint8_t numDimensions = magic[3];
-
-    vector<uint32_t> dimSizes(numDimensions);
-    size_t totalElements = 1;
-
-    for (int i = 0; i < numDimensions; i++)
-    {
-        uint32_t size;
-
-        file.read(reinterpret_cast<char*>(&size), 4);
-
-        size = swapEndian32(size);
-
-        dimSizes[i] = size;
-        totalElements *= size;
-    }
-
-    if (dataType == 0x08)
-    {
-        vector<uint8_t> dataBuffer(totalElements);
-
-        file.read(
-            reinterpret_cast<char*>(dataBuffer.data()),
-            totalElements
-        );
-
-        size_t numberOfImages = dimSizes[0];
-        size_t pixelsPerImage = dimSizes[1] * dimSizes[2];
-
-        TestImagesData.resize(numberOfImages);
-
-        for (size_t image = 0; image < numberOfImages; image++)
-        {
-            TestImagesData[image].resize(pixelsPerImage);
-
-            for (size_t pixel = 0; pixel < pixelsPerImage; pixel++)
-            {
-                TestImagesData[image][pixel] =
-                    static_cast<int>(
-                        dataBuffer[image * pixelsPerImage + pixel]
-                        );
+                TrainingImagesData[i][r][c] =
+                    pixel / 255.0f;
             }
         }
     }
-
-    file.close();
-
-    cout << "Test images loaded: "
-        << TestImagesData.size()
-        << endl;
 }
 
-void LoadTestDataLabelsMNIST()
-{
-    ifstream file(
-        "t10k-labels-idx1-ubyte",
-        ios::binary
-    );
+void LoadRandomWeightsIntoC1Filters() {
+    random_device rd;
+    mt19937 gen(rd());
 
-    if (!file.is_open())
-    {
-        cout << "Failed to open test labels!" << endl;
-        return;
-    }
+    uniform_real_distribution<float> dis(-1.0f, nextafter(1.0f, 2.0f));
 
-    uint32_t magic_number = 0;
-    uint32_t num_items = 0;
-
-    file.read(
-        reinterpret_cast<char*>(&magic_number),
-        sizeof(magic_number)
-    );
-
-    file.read(
-        reinterpret_cast<char*>(&num_items),
-        sizeof(num_items)
-    );
-
-    magic_number = swapEndian32(magic_number);
-    num_items = swapEndian32(num_items);
-
-    if (magic_number != 2049)
-    {
-        cout << "Invalid test label file!" << endl;
-        return;
-    }
-
-    vector<uint8_t> labels(num_items);
-
-    file.read(
-        reinterpret_cast<char*>(labels.data()),
-        num_items
-    );
-
-    TestImagesLabels.resize(num_items);
-
-    for (size_t i = 0; i < num_items; i++)
-    {
-        TestImagesLabels[i] =
-            static_cast<int>(labels[i]);
-    }
-
-    file.close();
-
-    cout << "Test labels loaded: "
-        << TestImagesLabels.size()
-        << endl;
-}
-
-vector<double> NormalizeImage(const vector<int>& image)
-{
-    vector<double> normalized(784);
-
-    for (int i = 0; i < 784; i++)
-    {
-        normalized[i] = image[i] / 255.0;
-    }
-
-    return normalized;
-}
-
-vector<double> NormalizeLabel(int labelTarget)
-{
-    vector<double> target(10, 0.0);
-
-    target[labelTarget] = 1.0;
-
-    return target;
-}
-
-double Sigmoid(double x)
-{
-    return 1.0 / (1.0 + exp(-x));
-}
-
-vector<double> Softmax(const vector<double>& logits,
-    double temperature = 1.0)
-{
-    vector<double> probabilities(logits.size());
-
-    double maxLogit =
-        *max_element(logits.begin(), logits.end());
-
-    double sum = 0.0;
-
-    for (double x : logits)
-    {
-        sum += exp((x - maxLogit) / temperature);
-    }
-
-    for (int i = 0; i < logits.size(); i++)
-    {
-        probabilities[i] =
-            exp((logits[i] - maxLogit) / temperature)
-            / sum;
-    }
-
-    return probabilities;
-}
-
-void LoadWeights(string FileName, int input, int hidden, int output)
-{
-    ifstream file(FileName);
-
-    if (!file)
-    {
-        cout << filesystem::current_path() << endl;
-        cout << "Failed to open Weights.txt!" << endl;
-        return;
-    }
-
-    vector<double> Nweights;
-    double value;
-
-    while (file >> value)
-    {
-        Nweights.push_back(value);
-    }
-
-    file.close();
-
-    int requiredWeights =
-        (input * hidden) +
-        (hidden * output);
-
-    if (Nweights.size() < requiredWeights)
-    {
-        cout << "Weights.txt does not contain enough weights!"
-            << endl;
-
-        cout << "Required: "
-            << requiredWeights
-            << endl;
-
-        cout << "Found: "
-            << Nweights.size()
-            << endl;
-
-        return;
-    }
-
-    // Input -> Hidden
-    weightsInputHidden.resize(
-        hidden,
-        vector<double>(input)
-    );
-
-    int z = 0;
-
-    for (int h = 0; h < hidden; h++)
-    {
-        for (int i = 0; i < input; i++)
-        {
-            weightsInputHidden[h][i] =
-                Nweights[z++];
-
-        }
-    }
-
-    // Hidden -> Output
-    weightsHiddenOutput.resize(
-        output,
-        vector<double>(hidden)
-    );
-
-    for (int o = 0; o < output; o++)
-    {
-        for (int h = 0; h < hidden; h++)
-        {
-            weightsHiddenOutput[o][h] =
-                Nweights[z++];
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            C1Filter1[i][j] = dis(gen);
+            C1Filter2[i][j] = dis(gen);
         }
     }
 }
 
-void LoadBiases(string FileName, int hidden, int output)
-{
-    ifstream file(FileName);
+void LoadRandomWeightsIntoC2Filters() {
+    random_device rd;
+    mt19937 gen(rd());
 
-    if (!file)
-    {
-        cout << filesystem::current_path() << endl;
-        cout << "Failed to open Biases.txt!" << endl;
-        return;
-    }
+    uniform_real_distribution<float> dis(-1.0f, nextafter(1.0f, 2.0f));
 
-    vector<double> biases;
-    double value;
-
-    while (file >> value)
-    {
-        biases.push_back(value);
-    }
-
-    file.close();
-
-    int requiredBiases =
-        hidden + output;
-
-    if (biases.size() < requiredBiases)
-    {
-        cout << "Biases.txt does not contain enough biases!"
-            << endl;
-
-        return;
-    }
-
-    // Hidden biases
-    biasesHidden.resize(hidden);
-
-    for (int h = 0; h < hidden; h++)
-    {
-        biasesHidden[h] =
-            biases[h];
-    }
-
-    // Output biases
-    biasesOutput.resize(output);
-
-    for (int o = 0; o < output; o++)
-    {
-        biasesOutput[o] =
-            biases[hidden + o];
-    }
-}
-
-void TrainingMNISTNeuralNetwork(
-    int NumOfEpochs,
-    double LearningRate,
-    vector<vector<double>>& weightsInputHidden,
-    vector<vector<double>>& weightsHiddenOutput,
-    int inputLayerSize,
-    int hiddenLayerSize,
-    int outputLayerSize,
-    vector<double>& biasesHidden,
-    vector<double>& biasesOutput)
-{
-    // Load MNIST only once
-    LoadTrainingDataMNIST();
-    LoadTrainingDataLabelsMNIST();
-
-
-    for (int epoch = 0; epoch < NumOfEpochs; epoch++)
-    {
-        int correct = 0;
-        double totalLoss = 0.0;
-        int dataCount = 0;
-
-        vector<double> hidden(hiddenLayerSize);
-        vector<double> hiddenSigmoid(hiddenLayerSize);
-        vector<double> hidden_Unit_Error(hiddenLayerSize);
-
-        vector<double> outputs(outputLayerSize);
-        vector<double> output_Unit_Error(outputLayerSize);
-
-        for (int image = 0;
-            image < TrainingImagesData.size();
-            image++)
-        {
-
-            // Show progress every 1000 images
-            if (image % 1000 == 0)
-            {
-                double progress =
-                    (static_cast<double>(image) /
-                        TrainingImagesData.size()) * 100.0;
-
-                cout << "\rEpoch: "
-                    << epoch
-                    << " | Image: "
-                    << image
-                    << "/"
-                    << TrainingImagesData.size()
-                    << " | "
-                    << progress
-                    << "%"
-                    << flush;
-            }
-
-            // Normalize image
-            vector<double> inputs = NormalizeImage(TrainingImagesData[image]);
-
-            // Get label
-            int label = TrainingImagesLabels[image];
-
-            // Convert label to one-hot target
-            vector<double> target =
-                NormalizeLabel(label);
-
-            // Forward Pass
-            // Input -> Hidden
-            for (int h = 0; h < hiddenLayerSize; h++)
-            {
-                hidden[h] = 0.0;
-
-                for (int i = 0; i < inputLayerSize; i++)
-                {
-                    hidden[h] +=
-                        inputs[i] *
-                        weightsInputHidden[h][i];
+    for (int filters = 0; filters < 4; filters++) {
+        for (int channel = 0; channel < 2; channel++) {
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    C2Filters[filters][channel][i][j] = dis(gen);
                 }
-
-                hidden[h] += biasesHidden[h];
-
-                hiddenSigmoid[h] =
-                    Sigmoid(hidden[h]);
             }
-
-
-            // Hidden -> Output
-            for (int o = 0; o < outputLayerSize; o++)
-            {
-                outputs[o] = biasesOutput[o];
-
-                for (int h = 0; h < hiddenLayerSize; h++)
-                {
-                    outputs[o] +=
-                        hiddenSigmoid[h] *
-                        weightsHiddenOutput[o][h];
-                }
-
-            }
-            outputs = Softmax(outputs, 1.0);
-
-            int prediction =
-                max_element(outputs.begin(), outputs.end())
-                - outputs.begin();
-
-            if (prediction == label)
-            {
-                correct++;
-            }
-
-            // Loss
-            for (int o = 0; o < outputLayerSize; o++)
-            {
-                totalLoss +=
-                    -target[o] * log(outputs[o] + 1e-15);
-            }
-
-            dataCount++;
-
-
-            // Backpropagation
-            // Output errors
-            for (int o = 0; o < outputLayerSize; o++)
-            {
-                output_Unit_Error[o] =
-                    target[o] - outputs[o];
-            }
-
-
-            // Hidden errors
-            for (int h = 0; h < hiddenLayerSize; h++)
-            {
-                hidden_Unit_Error[h] = 0.0;
-
-                for (int o = 0; o < outputLayerSize; o++)
-                {
-                    hidden_Unit_Error[h] +=
-                        weightsHiddenOutput[o][h] *
-                        output_Unit_Error[o];
-                }
-
-                hidden_Unit_Error[h] *=
-                    hiddenSigmoid[h] *
-                    (1.0 - hiddenSigmoid[h]);
-            }
-
-
-            // Hidden -> Output weights
-            for (int o = 0; o < outputLayerSize; o++)
-            {
-                for (int h = 0; h < hiddenLayerSize; h++)
-                {
-                    double delta =
-                        LearningRate *
-                        output_Unit_Error[o] *
-                        hiddenSigmoid[h];
-
-                    weightsHiddenOutput[o][h] += delta;
-                }
-
-                // Output bias
-                double delta_output_bias =
-                    LearningRate *
-                    output_Unit_Error[o];
-
-                biasesOutput[o] +=
-                    delta_output_bias;
-            }
-
-
-            // Input -> Hidden weights
-            for (int h = 0; h < hiddenLayerSize; h++)
-            {
-                for (int i = 0; i < inputLayerSize; i++)
-                {
-                    double delta =
-                        LearningRate *
-                        hidden_Unit_Error[h] *
-                        inputs[i];
-
-                    weightsInputHidden[h][i] += delta;
-                }
-
-                // Hidden bias
-                double delta_hidden_bias =
-                    LearningRate *
-                    hidden_Unit_Error[h];
-
-                biasesHidden[h] +=
-                    delta_hidden_bias;
-            }
-        }
-
-        cout << endl;
-
-        // Epoch information
-        if (epoch % 1 == 0)
-        {
-            double averageLoss =
-                totalLoss / dataCount;
-
-            double accuracy =
-                100.0 * correct / dataCount;
-
-            cout << "Epoch: "
-                << epoch
-                << " | Average Cross Entropy: "
-                << averageLoss
-                << " | Accuracy: "
-                << accuracy
-                << endl;
         }
     }
 }
 
-void PredictingMode(
-    int inputLayerSize,
-    int hiddenLayerSize,
-    int outputLayerSize,
-    vector<double>& biasesHidden,
-    vector<double>& biasesOutput)
+double Sigmoid(float sum)
 {
-    int imageNumber;
-
-    cout << "Enter image number (0 - "
-        << TrainingImagesData.size() - 1
-        << "): ";
-
-    cin >> imageNumber;
-
-    if (imageNumber < 0 ||
-        imageNumber >= TrainingImagesData.size())
-    {
-        cout << "Invalid image number!" << endl;
-        return;
-    }
-
-    // Get image
-    vector<double> inputs =
-        NormalizeImage(TrainingImagesData[imageNumber]);
-
-    vector<double> hidden(hiddenLayerSize);
-    vector<double> hiddenSigmoid(hiddenLayerSize);
-
-    vector<double> outputs(outputLayerSize);
-
-
-    // =========================
-    // Input -> Hidden
-    // =========================
-
-    for (int h = 0; h < hiddenLayerSize; h++)
-    {
-        hidden[h] = 0.0;
-
-        for (int i = 0; i < inputLayerSize; i++)
-        {
-            hidden[h] +=
-                inputs[i] *
-                weightsInputHidden[h][i];
-        }
-
-        hidden[h] += biasesHidden[h];
-
-        hiddenSigmoid[h] =
-            Sigmoid(hidden[h]);
-    }
-
-
-    // =========================
-    // Hidden -> Output
-    // =========================
-
-    for (int o = 0; o < outputLayerSize; o++)
-    {
-        outputs[o] =
-            biasesOutput[o];
-
-        for (int h = 0; h < hiddenLayerSize; h++)
-        {
-            outputs[o] +=
-                hiddenSigmoid[h] *
-                weightsHiddenOutput[o][h];
-        }
-    }
-
-    outputs = Softmax(outputs, 1.0);
-
-
-    // =========================
-    // Find highest probability
-    // =========================
-
-    int predictedDigit = 0;
-
-    for (int o = 1; o < outputLayerSize; o++)
-    {
-        if (outputs[o] > outputs[predictedDigit])
-        {
-            predictedDigit = o;
-        }
-    }
-
-
-    // =========================
-    // Results
-    // =========================
-
-    cout << endl;
-
-    cout << "Predicted Digit: "
-        << predictedDigit
-        << endl;
-
-    cout << "Actual Digit: "
-        << TrainingImagesLabels[imageNumber]
-        << endl;
-
-    cout << endl;
-
-    cout << "Probabilities:" << endl;
-
-    for (int o = 0; o < outputLayerSize; o++)
-    {
-        cout << o
-            << ": "
-            << outputs[o]
-            << endl;
-    }
+    return 1.0 / (1.0 + exp(-sum));
 }
 
-void TestMNISTNeuralNetwork(
-    vector<vector<double>>& weightsInputHidden,
-    vector<vector<double>>& weightsHiddenOutput,
-    int inputLayerSize,
-    int hiddenLayerSize,
-    int outputLayerSize,
-    vector<double>& biasesHidden,
-    vector<double>& biasesOutput)
-{
-    LoadTestDataMNIST();
-    LoadTestDataLabelsMNIST();
-
-    int correct = 0;
-
-    for (int image = 0;
-        image < TestImagesData.size();
-        image++)
-    {
-        vector<double> inputs =
-            NormalizeImage(TestImagesData[image]);
-
-        // Forward Pass
-        vector<double> hidden(hiddenLayerSize);
-        vector<double> hiddenSigmoid(hiddenLayerSize);
-
-        for (int h = 0; h < hiddenLayerSize; h++)
-        {
-            hidden[h] = 0.0;
-
-            for (int i = 0; i < inputLayerSize; i++)
-            {
-                hidden[h] += inputs[i] * weightsInputHidden[h][i];
-            }
-
-            hidden[h] += biasesHidden[h];
-
-            hiddenSigmoid[h] = Sigmoid(hidden[h]);
-        }
-
-        vector<double> outputs(outputLayerSize);
-
-        for (int o = 0; o < outputLayerSize; o++)
-        {
-            outputs[o] =
-                biasesOutput[o];
-
-            for (int h = 0; h < hiddenLayerSize; h++)
-            {
-                outputs[o] +=
-                    hiddenSigmoid[h] *
-                    weightsHiddenOutput[o][h];
-            }
-        }
-
-        outputs = Softmax(outputs, 1.0);
-
-        // Find highest probability
-
-        int predictedDigit = 0;
-
-        for (int o = 1; o < outputLayerSize; o++)
-        {
-            if (outputs[o] > outputs[predictedDigit])
-            {
-                predictedDigit = o;
-            }
-        }
-
-        // Compare with actual
-        int actualDigit = TestImagesLabels[image];
-
-        if (predictedDigit == actualDigit)
-        {
-            correct++;
-        }
-
-        // Progress
-        if (image % 100 == 0)
-        {
-            double progress =
-                (static_cast<double>(image) /
-                    TestImagesData.size()) * 100.0;
-
-            cout << "\rTesting: " << image << "/" << TestImagesData.size() << " | " << progress << "%" << flush;
-        }
+float ReLU(float sum) {
+    if (sum < 0) {
+        sum = 0;
     }
-
-    double accuracy = (static_cast<double>(correct) / TestImagesData.size()) * 100.0;
-
-    cout << endl;
-
-    cout << "MNIST TEST RESULTS" << endl;
-
-    cout << "Correct: "
-        << correct
-        << "/"
-        << TestImagesData.size()
-        << endl;
-
-    cout << "Incorrect: "
-        << TestImagesData.size() - correct
-        << endl;
-
-    cout << "Accuracy: "
-        << accuracy
-        << "%"
-        << endl;
+    else if (sum >= 0) {
+        sum = sum;
+    }
 }
 
 int main()
 {
+    //Loading the Images 1 means 1 images will be loaded
+    LoadTrainingDataMNIST(1);
 
-    // Layers
-    int input = 784; // K
-    int hidden = 128; // N
-    int output = 10;
+    //Initializing the C1 kernels with random weights
+    LoadRandomWeightsIntoC1Filters();
 
-    int Mode;
+    //Intializing the C2 kernels with random weights
+    LoadRandomWeightsIntoC2Filters();
 
-    // Load weights
-    LoadWeights("Weights.txt", input, hidden, output);
+    //Convolution 1
+    int C1rows = 28;
+    int C1cols = 28;
+    int C1kernelSize = 5;
+    float C1F1Bias = 0.155;
+    float C1F2Bias = 0.255;
 
-    // Biases
-    LoadBiases("Biases.txt", hidden, output);
+    //Pooling
+    int PoolSize = 2;
+    int PoolStride = 2;
 
-    // Learning rate
-    double learning_Rate = 0.05;
+    //Convolution 2
+    int C2rows = 12;
+    int C2cols = 12;
+    int C2KernelSize = 3;
+    float C2F1Bias = -0.255;
+    float C2F2Bias = -0.155;
+    float C2F3Bias = 0.125;
+    float C2F4Bias = 0.225;
 
-    // Training
-    const int epochs = 10;
-    
-    cout << "Choose a Mode(Press 0 for Training the Network OR Press 1 for Predicting): ";
-    cin >> Mode;
+    //Convolution 1 Kernel Processed Images
+    for (int i = 0; i <= C1rows - C1kernelSize; i++) {
+        for (int j = 0; j <= C1cols - C1kernelSize; j++) {
 
-    if (Mode == 0) {
+            float sum1 = 0.0f;
+            float sum2 = 0.0f;
 
-        TrainingMNISTNeuralNetwork(
-            epochs,
-            learning_Rate,
-            weightsInputHidden,
-            weightsHiddenOutput,
-            input,
-            hidden,
-            output,
-            biasesHidden,
-            biasesOutput
-        );
+            for (int k = 0; k < C1kernelSize; k++) {
+                for (int l = 0; l < C1kernelSize; l++) {
 
-        // Save updated weights
-        ofstream weightFile("Weights.txt");
+                    sum1 += TrainingImagesData[0][i + k][j + l] * C1Filter1[k][l];
 
-        if (!weightFile)
-        {
-            cout << "Failed to save Weights.txt!" << endl;
-            return 1;
+                    sum2 += TrainingImagesData[0][i + k][j + l] * C1Filter2[k][l];
+
+                }
+            }
+            C1Image1[i][j] = ReLU(sum1 + C1F1Bias);
+            C1Image2[i][j] = ReLU(sum2 + C1F2Bias);
         }
+    }
 
-        // Input -> Hidden
-        for (int h = 0; h < hidden; h++)
-        {
-            for (int i = 0; i < input; i++)
-            {
-                weightFile << weightsInputHidden[h][i] << endl;
+    //Convolution 1 Pooled Images
+    for (int i = 0; i <= 24 - PoolSize; i += PoolStride) {
+        for (int j = 0; j <= 24 - PoolSize; j += PoolStride) {
+            float TempMax1 = C1Image1[i][j];
+            float TempMax2 = C1Image2[i][j];
+            
+            for (int k = 0; k < PoolSize; k++) {
+                for (int l = 0; l < PoolSize; l++) {
+                    if (C1Image1[i + k][j + l] > TempMax1) {
+                        TempMax1 = C1Image1[i + k][j + l];
+                    }
+                    if (C1Image2[i + k][j + l] > TempMax2) {
+                        TempMax2 = C1Image2[i + k][j + l];
+                    }
+                }
+            }
+            C1Image1Pooled[i / PoolStride][j / PoolStride] = TempMax1;
+            C1Image2Pooled[i / PoolStride][j / PoolStride] = TempMax2;
+        }
+    }
+
+    //Convolution 2 Kernel Processed Images
+    for (int filter = 0; filter < 4; filter++) {
+
+        for (int i = 0; i <= C2rows - C2KernelSize; i++) {
+            for (int j = 0; j <= C2cols - C2KernelSize; j++) {
+
+                float sum = 0.0f;
+
+                for (int channel = 0; channel < 2; channel++) {
+
+                    for (int k = 0; k < C2KernelSize; k++) {
+                        for (int l = 0; l < C2KernelSize; l++) {
+
+                            if (channel == 0) {
+                                sum += C1Image1Pooled[i + k][j + l]
+                                    * C2Filters[filter][channel][k][l];
+                            }
+                            else {
+                                sum += C1Image2Pooled[i + k][j + l]
+                                    * C2Filters[filter][channel][k][l];
+                            }
+
+                        }
+                    }
+                }
+                if (filter == 0) C2Image1[i][j] = Sigmoid(sum + C2F1Bias);
+                if (filter == 1) C2Image2[i][j] = Sigmoid(sum + C2F2Bias);
+                if (filter == 2) C2Image3[i][j] = Sigmoid(sum + C2F3Bias);
+                if (filter == 3) C2Image4[i][j] = Sigmoid(sum + C2F4Bias);
             }
         }
+    }
 
-        // Hidden -> Output
-        for (int o = 0; o < output; o++)
-        {
-            for (int h = 0; h < hidden; h++)
-            {
-                weightFile << weightsHiddenOutput[o][h] << endl;
+    //Convolution 2 Pooled Images
+    for (int i = 0; i <= 10 - PoolSize; i += PoolStride) {
+        for (int j = 0; j <= 10 - PoolSize; j += PoolStride) {
+            float TempMax1 = C2Image1[i][j];
+            float TempMax2 = C2Image2[i][j];
+            float TempMax3 = C2Image3[i][j];
+            float TempMax4 = C2Image4[i][j];
+
+            for (int k = 0; k < PoolSize; k++) {
+                for (int l = 0; l < PoolSize; l++) {
+                    if (C2Image1[i + k][j + l] > TempMax1) {
+                        TempMax1 = C2Image1[i + k][j + l];
+                    }
+                    if (C2Image2[i + k][j + l] > TempMax2) {
+                        TempMax2 = C2Image2[i + k][j + l];
+                    }
+                    if (C2Image3[i + k][j + l] > TempMax3) {
+                        TempMax3 = C2Image3[i + k][j + l];
+                    }
+                    if (C2Image4[i + k][j + l] > TempMax4) {
+                        TempMax4 = C2Image4[i + k][j + l];
+                    }
+                }
             }
+            C2Image1Pooled[i / PoolStride][j / PoolStride] = TempMax1;
+            C2Image2Pooled[i / PoolStride][j / PoolStride] = TempMax2;
+            C2Image3Pooled[i / PoolStride][j / PoolStride] = TempMax3;
+            C2Image4Pooled[i / PoolStride][j / PoolStride] = TempMax4;
         }
-
-        weightFile.close();
-
-        ofstream biasFile("Biases.txt");
-
-        if (!biasFile)
-        {
-            cout << "Failed to save Biases.txt!" << endl;
-            return 1;
-        }
-
-        // Hidden biases
-        for (int h = 0; h < hidden; h++)
-        {
-            biasFile << biasesHidden[h] << endl;
-        }
-
-        // Output biases
-        for (int o = 0; o < output; o++)
-        {
-            biasFile << biasesOutput[o] << endl;
-        }
-
-        biasFile.close();
-
     }
-    else if (Mode == 1)
-    {
-        TestMNISTNeuralNetwork(
-            weightsInputHidden,
-            weightsHiddenOutput,
-            input,
-            hidden,
-            output,
-            biasesHidden,
-            biasesOutput
-        );
-    }
-    else {
-        cout << "Unknown Mode";
-    }
+
     return 0;
 }
 

@@ -179,4 +179,21 @@ God damn
 Status:
 - [x] Complete
 
+## Milestone 8: Convolutional Neural Networks (CNNs)
+
+Research:
+- Convolution
+- Pooling
+- CNNs
+
+Question:
+- Why are CNNs better at images?
+
+Concepts:
+- Feature Extraction
+- Spatial Information
+
+Status:
+- [s] Started
+
 ---
