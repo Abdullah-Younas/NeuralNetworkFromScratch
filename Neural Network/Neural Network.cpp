@@ -33,6 +33,11 @@ vector<vector<float>> C2Image4Pooled(5, vector<float>(5));
 
 vector<float> FlatPixelValues(100);
 
+vector<vector<float>> FlatToOutputWeights(10, vector<float>(100));
+vector<float> OutputBiases(10);
+
+vector<float> Output(10);
+
 void LoadTrainingDataMNIST(int imgsToLoad)
 {
     ifstream file("train-images-idx3-ubyte", ios::binary);
@@ -100,18 +105,60 @@ void LoadRandomWeightsIntoC2Filters() {
     }
 }
 
-double Sigmoid(float sum)
+void LoadRandomWeightsIntoFlatToOutputWeights() {
+    random_device rd;
+    mt19937 gen(rd());
+
+    uniform_real_distribution<float> dis(-1.0f, nextafter(1.0f, 2.0f));
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 100; j++) {
+            FlatToOutputWeights[i][j] = dis(gen);
+        }
+    }
+}
+
+void LoadRandomBiasesIntoOutputLayer() {
+    random_device rd;
+    mt19937 gen(rd());
+
+    uniform_real_distribution<float> dis(-1.0f, nextafter(1.0f, 2.0f));
+    for (int i = 0; i < 10; i++) {
+        OutputBiases[i] = dis(gen);
+    }
+}
+
+float Sigmoid(float sum)
 {
-    return 1.0 / (1.0 + exp(-sum));
+    return static_cast<float>(1.0 / (1.0 + exp(-sum)));
 }
 
 float ReLU(float sum) {
+    float value = 0;
     if (sum < 0) {
-        sum = 0;
+        value = 0;
     }
     else if (sum >= 0) {
-        sum = sum;
+        value = sum;
+    } 
+    return sum = value;
+}
+
+vector<float> Softmax(vector<float> Logits)
+{
+    float MaxLogit = *max_element(Logits.begin(), Logits.end());
+
+    float TotalSum = 0.0f;
+
+    for (int i = 0; i < Logits.size(); i++) {
+        Logits[i] = exp(Logits[i] - MaxLogit);
+        TotalSum += Logits[i];
     }
+
+    for (int i = 0; i < Logits.size(); i++) {
+        Logits[i] /= TotalSum;
+    }
+
+    return Logits;
 }
 
 int main()
@@ -122,15 +169,21 @@ int main()
     //Initializing the C1 kernels with random weights
     LoadRandomWeightsIntoC1Filters();
 
-    //Intializing the C2 kernels with random weights
+    //Initializing the C2 kernels with random weights
     LoadRandomWeightsIntoC2Filters();
+
+    //Initializing the Flat to Output layer with random weights
+    LoadRandomWeightsIntoFlatToOutputWeights();
+
+    //Initializing Output layer with random biases
+    LoadRandomBiasesIntoOutputLayer();
 
     //Convolution 1
     int C1rows = 28;
     int C1cols = 28;
     int C1kernelSize = 5;
-    float C1F1Bias = 0.155;
-    float C1F2Bias = 0.255;
+    float C1F1Bias = 0.155f;
+    float C1F2Bias = 0.255f;
 
     //Pooling
     int PoolSize = 2;
@@ -140,10 +193,16 @@ int main()
     int C2rows = 12;
     int C2cols = 12;
     int C2KernelSize = 3;
-    float C2F1Bias = -0.255;
-    float C2F2Bias = -0.155;
-    float C2F3Bias = 0.125;
-    float C2F4Bias = 0.225;
+    float C2F1Bias = -0.255f;
+    float C2F2Bias = -0.155f;
+    float C2F3Bias = 0.125f;
+    float C2F4Bias = 0.225f;
+
+    //Flattening Pooled images into a single vector/array
+    int FAIndex = 0;
+
+    //Fully Connected layer Flat - Output
+    int OutputLayers = 10;
 
     //Convolution 1 Kernel Processed Images
     for (int i = 0; i <= C1rows - C1kernelSize; i++) {
@@ -171,7 +230,7 @@ int main()
         for (int j = 0; j <= 24 - PoolSize; j += PoolStride) {
             float TempMax1 = C1Image1[i][j];
             float TempMax2 = C1Image2[i][j];
-            
+
             for (int k = 0; k < PoolSize; k++) {
                 for (int l = 0; l < PoolSize; l++) {
                     if (C1Image1[i + k][j + l] > TempMax1) {
@@ -249,6 +308,42 @@ int main()
             C2Image3Pooled[i / PoolStride][j / PoolStride] = TempMax3;
             C2Image4Pooled[i / PoolStride][j / PoolStride] = TempMax4;
         }
+    }
+
+    //Flattening pooled images into a single vector 
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            FlatPixelValues[FAIndex++] = C2Image1Pooled[i][j];
+        }
+    }
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            FlatPixelValues[FAIndex++] = C2Image2Pooled[i][j];
+        }
+    }
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            FlatPixelValues[FAIndex++] = C2Image3Pooled[i][j];
+        }
+    }
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            FlatPixelValues[FAIndex++] = C2Image4Pooled[i][j];
+        }
+    }
+
+    //Flat to Output Connection
+    for (int i = 0; i < OutputLayers; i++) {
+        Output[i] = 0;
+        for (int j = 0; j < 100; j++) {
+            Output[i] += FlatPixelValues[j] * FlatToOutputWeights[i][j];
+        }
+        Output[i] += OutputBiases[i];
+    }
+    vector<float> Probabilities = Softmax(Output);
+
+    for (int i = 0; i < OutputLayers; i++) {
+        cout << "Probabilities[" << i << "]: " << Probabilities[i] << endl;
     }
 
     return 0;
