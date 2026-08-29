@@ -150,6 +150,11 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Biases.txt" />
+    <Text Include="C1C2Biases.txt" />
+    <Text Include="C1Weights.txt" />
+    <Text Include="C2Weights.txt" />
+    <Text Include="DenseWeights.txt" />
+    <Text Include="OutputBiases.txt" />
     <Text Include="TrainingDataHumanClassifier.txt" />
     <Text Include="Weights.txt" />
   </ItemGroup>

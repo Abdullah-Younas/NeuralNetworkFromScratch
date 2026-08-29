@@ -27,6 +27,21 @@
     <Text Include="Biases.txt">
       <Filter>Source Files</Filter>
     </Text>
+    <Text Include="C1Weights.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="C2Weights.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="DenseWeights.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="OutputBiases.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="C1C2Biases.txt">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <None Include="t10k-images-idx3-ubyte">
@@ -43,13 +58,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="test.cuh">
-      <Filter>Source Files</Filter>
-    </ClInclude>
+    <ClInclude Include="main.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="test.cu">
-      <Filter>Source Files</Filter>
-    </CudaCompile>
+    <CudaCompile Include="main.cu" />
   </ItemGroup>
 </Project>
