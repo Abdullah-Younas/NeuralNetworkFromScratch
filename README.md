@@ -194,6 +194,6 @@ Concepts:
 - Spatial Information
 
 Status:
-- [s] Started
+- [x] Complete
 
 ---
