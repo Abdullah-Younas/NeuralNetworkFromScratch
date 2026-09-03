@@ -165,12 +165,12 @@
     <None Include="train-labels-idx1-ubyte" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="main.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="main.cuh" />
+    <ClInclude Include="cnn_cuda.cuh" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_resize2.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="cnn_cuda.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
