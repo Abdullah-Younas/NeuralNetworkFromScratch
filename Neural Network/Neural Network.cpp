@@ -1,3 +1,5 @@
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <iostream>
 #include <random>
 #include <filesystem>
@@ -6,13 +8,15 @@
 #include <vector>
 #include <cstdint>
 #include <algorithm>
+#include "stb_image.h"
+#include "stb_image_resize2.h"
 
 using namespace std;
 
-const int OutputLayers = 10;
+const int OutputLayers = 2;
 
-vector<vector<vector<float>>> TrainingImagesData;
-vector<int> TrainingImagesLabels;
+vector<vector<float>> TrainingImagesData;
+vector<int> TrainingLabels;
 
 vector<vector<float>> C1Filter1(5, vector<float>(5));
 vector<vector<float>> C1Filter2(5, vector<float>(5));
@@ -25,43 +29,43 @@ vector<vector<vector<vector<float>>>> C2Filters(
     )
 );
 
-vector<vector<float>> C1Image1(24, vector<float>(24));
-vector<vector<float>> C1Image2(24, vector<float>(24));
+vector<vector<float>> C1Image1(124, vector<float>(124));
+vector<vector<float>> C1Image2(124, vector<float>(124));
 
-vector<vector<float>> C1Image1Pooled(12, vector<float>(12));
-vector<vector<float>> C1Image2Pooled(12, vector<float>(12));
+vector<vector<float>> C1Image1Pooled(62, vector<float>(62));
+vector<vector<float>> C1Image2Pooled(62, vector<float>(62));
 
-vector<vector<float>> C2Image1(10, vector<float>(10));
-vector<vector<float>> C2Image2(10, vector<float>(10));
-vector<vector<float>> C2Image3(10, vector<float>(10));
-vector<vector<float>> C2Image4(10, vector<float>(10));
+vector<vector<float>> C2Image1(60, vector<float>(60));
+vector<vector<float>> C2Image2(60, vector<float>(60));
+vector<vector<float>> C2Image3(60, vector<float>(60));
+vector<vector<float>> C2Image4(60, vector<float>(60));
 
-vector<vector<float>> C2Image1Pooled(5, vector<float>(5));
-vector<vector<float>> C2Image2Pooled(5, vector<float>(5));
-vector<vector<float>> C2Image3Pooled(5, vector<float>(5));
-vector<vector<float>> C2Image4Pooled(5, vector<float>(5));
+vector<vector<float>> C2Image1Pooled(30, vector<float>(30));
+vector<vector<float>> C2Image2Pooled(30, vector<float>(30));
+vector<vector<float>> C2Image3Pooled(30, vector<float>(30));
+vector<vector<float>> C2Image4Pooled(30, vector<float>(30));
 
-vector<float> FlatPixelValues(100);
+vector<float> FlatPixelValues(3600);
 
-vector<vector<float>> FlatToOutputWeights(10, vector<float>(100));
-vector<float> OutputBiases(10);
+vector<vector<float>> FlatToOutputWeights(2, vector<float>(3600));
+vector<float> OutputBiases(2);
 
-vector<float> Output(10);
-vector<float> OutputError(10);
-vector<float> FlatError(100, 0.0f);
+vector<float> Output(2);
+vector<float> OutputError(2);
+vector<float> FlatError(3600, 0.0f);
 
-vector<vector<float>> C2PooledErrors(4, vector<float>(25, 0.0f));
+vector<vector<float>> C2PooledErrors(4, vector<float>(900, 0.0f));
 
-vector<vector<float>> C2Error1(10, vector<float>(10, 0.0f));
-vector<vector<float>> C2Error2(10, vector<float>(10, 0.0f));
-vector<vector<float>> C2Error3(10, vector<float>(10, 0.0f));
-vector<vector<float>> C2Error4(10, vector<float>(10, 0.0f));
+vector<vector<float>> C2Error1(60, vector<float>(60, 0.0f));
+vector<vector<float>> C2Error2(60, vector<float>(60, 0.0f));
+vector<vector<float>> C2Error3(60, vector<float>(60, 0.0f));
+vector<vector<float>> C2Error4(60, vector<float>(60, 0.0f));
 
-vector<vector<float>> C1PooledError1(12, vector<float>(12, 0.0f));
-vector<vector<float>> C1PooledError2(12, vector<float>(12, 0.0f));
+vector<vector<float>> C1PooledError1(62, vector<float>(62, 0.0f));
+vector<vector<float>> C1PooledError2(62, vector<float>(62, 0.0f));
 
-vector<vector<float>> C1Error1(24, vector<float>(24, 0.0f));
-vector<vector<float>> C1Error2(24, vector<float>(24, 0.0f));
+vector<vector<float>> C1Error1(124, vector<float>(124, 0.0f));
+vector<vector<float>> C1Error2(124, vector<float>(124, 0.0f));
 
 vector<float> C2DLoss1(18, 0.0f);
 vector<float> C2DLoss2(18, 0.0f);
@@ -79,67 +83,73 @@ float C2F2Bias = 0.0f;
 float C2F3Bias = 0.0f;
 float C2F4Bias = 0.0f;
 
+int width, height, channels;
 
-void LoadTrainingDataMNIST(int imgsToLoad)
-{
-    ifstream file("train-images-idx3-ubyte", ios::binary);
+int tar_w = 128;
+int tar_h = 128;
 
-    if (!file.is_open())
-    {
-        cout << "Failed to open MNIST file!" << endl;
-        return;
-    }
+void LoadTrainingImagesCats() {
+    for (const auto& file : filesystem::directory_iterator("Cats")) {
+        string filename = file.path().string();
 
-    file.seekg(16);
+        unsigned char* img = stbi_load(filename.c_str(), &width, &height, &channels, 1);
 
-    TrainingImagesData.resize(
-        imgsToLoad,
-        vector<vector<float>>(28, vector<float>(28))
-    );
+        if (img) {
+            unsigned char* output = (unsigned char*)malloc(tar_w * tar_h);
 
-    for (int i = 0; i < imgsToLoad; i++)
-    {
-        for (int r = 0; r < 28; r++)
-        {
-            for (int c = 0; c < 28; c++)
-            {
-                unsigned char pixel;
+            stbir_resize_uint8_linear(img, width, height, 0, output, tar_w, tar_h, 0, STBIR_1CHANNEL);
 
-                file.read((char*)&pixel, 1);
+            vector<float> image(16384);
 
-                TrainingImagesData[i][r][c] =
-                    pixel / 255.0f;
+            for (int i = 0; i < 16384; i++) {
+                image[i] = output[i] / 255.0f;
             }
+            
+
+            TrainingImagesData.push_back(image);
+            TrainingLabels.push_back(0);
+           
+            if (TrainingImagesData.size() % 1000 == 0)
+            {
+                cout << "Images loaded: " << TrainingImagesData.size() << endl;
+            }
+
+
+            free(output);
+            stbi_image_free(img);
         }
     }
-
-    file.close();
 }
 
-void loadTrainingDataLabels(int Labels)
-{
-    ifstream file("train-labels-idx1-ubyte", ios::binary);
+void LoadTrainingImagesDogs() {
+    for (const auto& file : filesystem::directory_iterator("Dogs")) {
+        string filename = file.path().string();
 
-    if (!file.is_open())
-    {
-        cout << "Failed to open MNIST label file!" << endl;
-        return;
+        unsigned char* img = stbi_load(filename.c_str(), &width, &height, &channels, 1);
+
+        if (img) {
+            unsigned char* output = (unsigned char*)malloc(tar_w * tar_h);
+
+            stbir_resize_uint8_linear(img, width, height, 0, output, tar_w, tar_h, 0, STBIR_1CHANNEL);
+
+            vector<float> image(16384);
+
+            for (int i = 0; i < 16384; i++) {
+                image[i] = output[i] / 255.0f;
+            }
+
+            TrainingImagesData.push_back(image);
+            TrainingLabels.push_back(1);
+
+            if (TrainingImagesData.size() % 1000 == 0)
+            {
+                cout << "Images loaded: " << TrainingImagesData.size() << endl;
+            }
+
+            free(output);
+            stbi_image_free(img);
+        }
     }
-
-    file.seekg(8);
-
-    TrainingImagesLabels.resize(Labels);
-
-    for (int i = 0; i < Labels; i++)
-    {
-        unsigned char label;
-
-        file.read((char*)&label, 1);
-
-        TrainingImagesLabels[i] = label;
-    }
-
-    file.close();
 }
 
 void LoadRandomWeightsIntoC1Filters()
@@ -256,9 +266,9 @@ void LoadRandomWeightsIntoFlatToOutputWeights()
 
     if (inFile.good() && inFile.peek() != EOF)
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 2; i++)
         {
-            for (int j = 0; j < 100; j++)
+            for (int j = 0; j < 3600; j++)
             {
                 inFile >> FlatToOutputWeights[i][j];
             }
@@ -276,9 +286,9 @@ void LoadRandomWeightsIntoFlatToOutputWeights()
 
     ofstream outFile("DenseWeights.txt");
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 2; i++)
     {
-        for (int j = 0; j < 100; j++)
+        for (int j = 0; j < 3600; j++)
         {
             FlatToOutputWeights[i][j] = dis(gen);
 
@@ -327,7 +337,7 @@ void LoadRandomBiasesIntoOutputLayer()
 
     if (inFile.good() && inFile.peek() != EOF)
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 2; i++)
         {
             inFile >> OutputBiases[i];
         }
@@ -344,7 +354,7 @@ void LoadRandomBiasesIntoOutputLayer()
 
     ofstream outFile("OutputBiases.txt");
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 2; i++)
     {
         OutputBiases[i] = dis(gen);
 
@@ -391,9 +401,9 @@ void SaveWeights()
 {
     ofstream DenseOut("DenseWeights.txt");
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 2; i++)
     {
-        for (int j = 0; j < 100; j++)
+        for (int j = 0; j < 3600; j++)
         {
             DenseOut << FlatToOutputWeights[i][j] << '\n';
         }
@@ -403,7 +413,7 @@ void SaveWeights()
 
     ofstream OutputBiasOut("OutputBiases.txt");
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 2; i++)
     {
         OutputBiasOut << OutputBiases[i] << '\n';
     }
@@ -466,10 +476,16 @@ void SaveWeights()
 void TrainCNN()
 {
     int epochs = 10;
-    int images = 60000;
 
-    LoadTrainingDataMNIST(images);
-    loadTrainingDataLabels(images);
+    LoadTrainingImagesCats();
+    LoadTrainingImagesDogs();
+
+    int images = TrainingImagesData.size();
+
+    cout << "Total Images loaded: " << images << endl;
+    cout << "Total Labels loaded: " << TrainingLabels.size() << endl;
+    cout << "Image size: " << TrainingImagesData[0].size() << " pixels" << endl;
+    cout << "Starting CNN training..." << endl;
 
     LoadRandomWeightsIntoC1Filters();
     LoadRandomWeightsIntoC2Filters();
@@ -480,35 +496,35 @@ void TrainCNN()
 
     for (int epoch = 0; epoch < epochs; epoch++)
     {
-        float LearningRate = 0.001f * pow(0.5f, epoch / 2); // halve every 2 epochs
+        float LearningRate = 0.05f;
         float TotalLoss = 0.0f;
         int Correct = 0;
 
-        cout << "Epoch " << epoch + 1 << endl;
+        cout << "Starting Epoch " << epoch + 1 << "/" << epochs << endl;
 
         for (int img = 0; img < images; img++)
         {
-            for (int i = 0; i < 24; i++)
+            for (int i = 0; i < 124; i++)
             {
-                for (int j = 0; j < 24; j++)
+                for (int j = 0; j < 124; j++)
                 {
                     C1Image1[i][j] = 0.0f;
                     C1Image2[i][j] = 0.0f;
                 }
             }
 
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < 62; i++)
             {
-                for (int j = 0; j < 12; j++)
+                for (int j = 0; j < 62; j++)
                 {
                     C1Image1Pooled[i][j] = 0.0f;
                     C1Image2Pooled[i][j] = 0.0f;
                 }
             }
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 60; i++)
             {
-                for (int j = 0; j < 10; j++)
+                for (int j = 0; j < 60; j++)
                 {
                     C2Image1[i][j] = 0.0f;
                     C2Image2[i][j] = 0.0f;
@@ -517,9 +533,9 @@ void TrainCNN()
                 }
             }
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 30; i++)
             {
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 30; j++)
                 {
                     C2Image1Pooled[i][j] = 0.0f;
                     C2Image2Pooled[i][j] = 0.0f;
@@ -528,9 +544,9 @@ void TrainCNN()
                 }
             }
 
-            for (int i = 0; i < 24; i++)
+            for (int i = 0; i < 124; i++)
             {
-                for (int j = 0; j < 24; j++)
+                for (int j = 0; j < 124; j++)
                 {
                     float Sum1 = 0.0f;
                     float Sum2 = 0.0f;
@@ -539,27 +555,19 @@ void TrainCNN()
                     {
                         for (int l = 0; l < 5; l++)
                         {
-                            Sum1 +=
-                                TrainingImagesData[img][i + k][j + l] *
-                                C1Filter1[k][l];
-
-                            Sum2 +=
-                                TrainingImagesData[img][i + k][j + l] *
-                                C1Filter2[k][l];
+                            Sum1 += TrainingImagesData[img][(i + k) * 128 + (j + l)] * C1Filter1[k][l];
+                            Sum2 += TrainingImagesData[img][(i + k) * 128 + (j + l)] * C1Filter2[k][l];
                         }
                     }
 
-                    C1Image1[i][j] =
-                        ReLU(Sum1 + C1F1Bias);
-
-                    C1Image2[i][j] =
-                        ReLU(Sum2 + C1F2Bias);
+                    C1Image1[i][j] = ReLU(Sum1 + C1F1Bias);
+                    C1Image2[i][j] = ReLU(Sum2 + C1F2Bias);
                 }
             }
 
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < 62; i++)
             {
-                for (int j = 0; j < 12; j++)
+                for (int j = 0; j < 62; j++)
                 {
                     int r = i * 2;
                     int c = j * 2;
@@ -573,14 +581,12 @@ void TrainCNN()
                         {
                             if (C1Image1[r + k][c + l] > Max1)
                             {
-                                Max1 =
-                                    C1Image1[r + k][c + l];
+                                Max1 = C1Image1[r + k][c + l];
                             }
 
                             if (C1Image2[r + k][c + l] > Max2)
                             {
-                                Max2 =
-                                    C1Image2[r + k][c + l];
+                                Max2 = C1Image2[r + k][c + l];
                             }
                         }
                     }
@@ -592,9 +598,9 @@ void TrainCNN()
 
             for (int filter = 0; filter < 4; filter++)
             {
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 60; i++)
                 {
-                    for (int j = 0; j < 10; j++)
+                    for (int j = 0; j < 60; j++)
                     {
                         float Sum = 0.0f;
 
@@ -606,15 +612,11 @@ void TrainCNN()
                                 {
                                     if (channel == 0)
                                     {
-                                        Sum +=
-                                            C1Image1Pooled[i + k][j + l] *
-                                            C2Filters[filter][channel][k][l];
+                                        Sum += C1Image1Pooled[i + k][j + l] * C2Filters[filter][channel][k][l];
                                     }
                                     else
                                     {
-                                        Sum +=
-                                            C1Image2Pooled[i + k][j + l] *
-                                            C2Filters[filter][channel][k][l];
+                                        Sum += C1Image2Pooled[i + k][j + l] * C2Filters[filter][channel][k][l];
                                     }
                                 }
                             }
@@ -622,34 +624,30 @@ void TrainCNN()
 
                         if (filter == 0)
                         {
-                            C2Image1[i][j] =
-                                ReLU(Sum + C2F1Bias);
+                            C2Image1[i][j] = ReLU(Sum + C2F1Bias);
                         }
 
                         if (filter == 1)
                         {
-                            C2Image2[i][j] =
-                                ReLU(Sum + C2F2Bias);
+                            C2Image2[i][j] = ReLU(Sum + C2F2Bias);
                         }
 
                         if (filter == 2)
                         {
-                            C2Image3[i][j] =
-                                ReLU(Sum + C2F3Bias);
+                            C2Image3[i][j] = ReLU(Sum + C2F3Bias);
                         }
 
                         if (filter == 3)
                         {
-                            C2Image4[i][j] =
-                                ReLU(Sum + C2F4Bias);
+                            C2Image4[i][j] = ReLU(Sum + C2F4Bias);
                         }
                     }
                 }
             }
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 30; i++)
             {
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 30; j++)
                 {
                     int r = i * 2;
                     int c = j * 2;
@@ -665,26 +663,22 @@ void TrainCNN()
                         {
                             if (C2Image1[r + k][c + l] > Max1)
                             {
-                                Max1 =
-                                    C2Image1[r + k][c + l];
+                                Max1 = C2Image1[r + k][c + l];
                             }
 
                             if (C2Image2[r + k][c + l] > Max2)
                             {
-                                Max2 =
-                                    C2Image2[r + k][c + l];
+                                Max2 = C2Image2[r + k][c + l];
                             }
 
                             if (C2Image3[r + k][c + l] > Max3)
                             {
-                                Max3 =
-                                    C2Image3[r + k][c + l];
+                                Max3 = C2Image3[r + k][c + l];
                             }
 
                             if (C2Image4[r + k][c + l] > Max4)
                             {
-                                Max4 =
-                                    C2Image4[r + k][c + l];
+                                Max4 = C2Image4[r + k][c + l];
                             }
                         }
                     }
@@ -698,132 +692,110 @@ void TrainCNN()
 
             int FlatIndex = 0;
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 30; i++)
             {
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 30; j++)
                 {
-                    FlatPixelValues[FlatIndex++] =
-                        C2Image1Pooled[i][j];
+                    FlatPixelValues[FlatIndex++] = C2Image1Pooled[i][j];
                 }
             }
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 30; i++)
             {
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 30; j++)
                 {
-                    FlatPixelValues[FlatIndex++] =
-                        C2Image2Pooled[i][j];
+                    FlatPixelValues[FlatIndex++] = C2Image2Pooled[i][j];
                 }
             }
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 30; i++)
             {
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 30; j++)
                 {
-                    FlatPixelValues[FlatIndex++] =
-                        C2Image3Pooled[i][j];
+                    FlatPixelValues[FlatIndex++] = C2Image3Pooled[i][j];
                 }
             }
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 30; i++)
             {
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 30; j++)
                 {
-                    FlatPixelValues[FlatIndex++] =
-                        C2Image4Pooled[i][j];
+                    FlatPixelValues[FlatIndex++] = C2Image4Pooled[i][j];
                 }
             }
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 2; i++)
             {
                 Output[i] = OutputBiases[i];
 
-                for (int j = 0; j < 100; j++)
+                for (int j = 0; j < 3600; j++)
                 {
-                    Output[i] +=
-                        FlatPixelValues[j] *
-                        FlatToOutputWeights[i][j];
+                    Output[i] += FlatPixelValues[j] * FlatToOutputWeights[i][j];
                 }
             }
 
-            vector<float> Probabilities =
-                Softmax(Output);
+            vector<float> Probabilities = Softmax(Output);
 
-            int Prediction =
-                max_element(
-                    Probabilities.begin(),
-                    Probabilities.end()
-                ) - Probabilities.begin();
+            int Prediction = max_element(Probabilities.begin(), Probabilities.end()) - Probabilities.begin();
 
-            int Label =
-                TrainingImagesLabels[img];
+            int Label = TrainingLabels[img];
 
             if (Prediction == Label)
             {
                 Correct++;
             }
 
-            float Probability =
-                max(Probabilities[Label], 1e-10f);
+            float Probability = max(Probabilities[Label], 1e-10f);
 
             TotalLoss -= log(Probability);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 2; i++)
             {
                 if (i == Label)
                 {
-                    OutputError[i] =
-                        Probabilities[i] - 1.0f;
+                    OutputError[i] = Probabilities[i] - 1.0f;
                 }
                 else
                 {
-                    OutputError[i] =
-                        Probabilities[i];
+                    OutputError[i] = Probabilities[i];
                 }
             }
 
-            for (int j = 0; j < 100; j++)
+            for (int j = 0; j < 3600; j++)
             {
                 FlatError[j] = 0.0f;
 
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 2; i++)
                 {
-                    FlatError[j] +=
-                        OutputError[i] *
-                        FlatToOutputWeights[i][j];
+                    FlatError[j] += OutputError[i] * FlatToOutputWeights[i][j];
                 }
             }
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 2; i++)
             {
-                for (int j = 0; j < 100; j++)
+                for (int j = 0; j < 3600; j++)
                 {
-                    FlatToOutputWeights[i][j] -=
-                        LearningRate *
-                        OutputError[i] *
-                        FlatPixelValues[j];
+                    FlatToOutputWeights[i][j] -= LearningRate * OutputError[i] * FlatPixelValues[j];
                 }
 
-                OutputBiases[i] -=
-                    LearningRate *
-                    OutputError[i];
+                OutputBiases[i] -= LearningRate * OutputError[i];
             }
 
             for (int filter = 0; filter < 4; filter++)
             {
-                for (int r = 0; r < 5; r++)
+                for (int r = 0; r < 30; r++)
                 {
-                    for (int c = 0; c < 5; c++)
+                    for (int c = 0; c < 30; c++)
                     {
-                        C2PooledErrors[filter][r * 5 + c] =
-                            FlatError[filter * 25 + r * 5 + c];
+                        C2PooledErrors[filter][r * 30 + c] =
+                            FlatError[filter * 900 + r * 30 + c];
                     }
                 }
             }
 
-            for (int r = 0; r < 10; r++)
+            for (int r = 0; r < 60; r++)
             {
-                for (int c = 0; c < 10; c++)
+                for (int c = 0; c < 60; c++)
                 {
                     C2Error1[r][c] = 0.0f;
                     C2Error2[r][c] = 0.0f;
@@ -834,9 +806,9 @@ void TrainCNN()
 
             for (int filter = 0; filter < 4; filter++)
             {
-                for (int pr = 0; pr < 5; pr++)
+                for (int pr = 0; pr < 30; pr++)
                 {
-                    for (int pc = 0; pc < 5; pc++)
+                    for (int pc = 0; pc < 30; pc++)
                     {
                         int r = pr * 2;
                         int c = pc * 2;
@@ -873,23 +845,19 @@ void TrainCNN()
 
                                 if (filter == 0)
                                 {
-                                    Value =
-                                        C2Image1[r + k][c + l];
+                                    Value = C2Image1[r + k][c + l];
                                 }
                                 else if (filter == 1)
                                 {
-                                    Value =
-                                        C2Image2[r + k][c + l];
+                                    Value = C2Image2[r + k][c + l];
                                 }
                                 else if (filter == 2)
                                 {
-                                    Value =
-                                        C2Image3[r + k][c + l];
+                                    Value = C2Image3[r + k][c + l];
                                 }
                                 else
                                 {
-                                    Value =
-                                        C2Image4[r + k][c + l];
+                                    Value = C2Image4[r + k][c + l];
                                 }
 
                                 if (Value > MaxValue)
@@ -901,8 +869,7 @@ void TrainCNN()
                             }
                         }
 
-                        float Error =
-                            C2PooledErrors[filter][pr * 5 + pc];
+                        float Error = C2PooledErrors[filter][pr * 30 + pc];
 
                         if (filter == 0)
                         {
@@ -924,9 +891,9 @@ void TrainCNN()
                 }
             }
 
-            for (int r = 0; r < 10; r++)
+            for (int r = 0; r < 60; r++)
             {
-                for (int c = 0; c < 10; c++)
+                for (int c = 0; c < 60; c++)
                 {
                     if (C2Image1[r][c] <= 0.0f)
                     {
@@ -966,11 +933,10 @@ void TrainCNN()
                     {
                         float LossChannel1 = 0.0f;
                         float LossChannel2 = 0.0f;
-                        float BiasLoss = 0.0f;
 
-                        for (int r = 0; r < 10; r++)
+                        for (int r = 0; r < 60; r++)
                         {
-                            for (int c = 0; c < 10; c++)
+                            for (int c = 0; c < 60; c++)
                             {
                                 float Error;
 
@@ -998,42 +964,28 @@ void TrainCNN()
                                 LossChannel2 +=
                                     Error *
                                     C1Image2Pooled[r + k][c + l];
-
-                                BiasLoss += Error;
                             }
                         }
 
                         if (filter == 0)
                         {
-                            C2DLoss1[k * 3 + l] =
-                                LossChannel1;
-
-                            C2DLoss1[9 + k * 3 + l] =
-                                LossChannel2;
+                            C2DLoss1[k * 3 + l] = LossChannel1;
+                            C2DLoss1[9 + k * 3 + l] = LossChannel2;
                         }
                         else if (filter == 1)
                         {
-                            C2DLoss2[k * 3 + l] =
-                                LossChannel1;
-
-                            C2DLoss2[9 + k * 3 + l] =
-                                LossChannel2;
+                            C2DLoss2[k * 3 + l] = LossChannel1;
+                            C2DLoss2[9 + k * 3 + l] = LossChannel2;
                         }
                         else if (filter == 2)
                         {
-                            C2DLoss3[k * 3 + l] =
-                                LossChannel1;
-
-                            C2DLoss3[9 + k * 3 + l] =
-                                LossChannel2;
+                            C2DLoss3[k * 3 + l] = LossChannel1;
+                            C2DLoss3[9 + k * 3 + l] = LossChannel2;
                         }
                         else
                         {
-                            C2DLoss4[k * 3 + l] =
-                                LossChannel1;
-
-                            C2DLoss4[9 + k * 3 + l] =
-                                LossChannel2;
+                            C2DLoss4[k * 3 + l] = LossChannel1;
+                            C2DLoss4[9 + k * 3 + l] = LossChannel2;
                         }
                     }
                 }
@@ -1044,9 +996,9 @@ void TrainCNN()
             float C2BiasLoss3 = 0.0f;
             float C2BiasLoss4 = 0.0f;
 
-            for (int r = 0; r < 10; r++)
+            for (int r = 0; r < 60; r++)
             {
-                for (int c = 0; c < 10; c++)
+                for (int c = 0; c < 60; c++)
                 {
                     C2BiasLoss1 += C2Error1[r][c];
                     C2BiasLoss2 += C2Error2[r][c];
@@ -1055,18 +1007,18 @@ void TrainCNN()
                 }
             }
 
-            for (int r = 0; r < 12; r++)
+            for (int r = 0; r < 62; r++)
             {
-                for (int c = 0; c < 12; c++)
+                for (int c = 0; c < 62; c++)
                 {
                     C1PooledError1[r][c] = 0.0f;
                     C1PooledError2[r][c] = 0.0f;
                 }
             }
 
-            for (int r = 0; r < 10; r++)
+            for (int r = 0; r < 60; r++)
             {
-                for (int c = 0; c < 10; c++)
+                for (int c = 0; c < 60; c++)
                 {
                     for (int k = 0; k < 3; k++)
                     {
@@ -1108,18 +1060,18 @@ void TrainCNN()
                 }
             }
 
-            for (int r = 0; r < 24; r++)
+            for (int r = 0; r < 124; r++)
             {
-                for (int c = 0; c < 24; c++)
+                for (int c = 0; c < 124; c++)
                 {
                     C1Error1[r][c] = 0.0f;
                     C1Error2[r][c] = 0.0f;
                 }
             }
 
-            for (int pr = 0; pr < 12; pr++)
+            for (int pr = 0; pr < 62; pr++)
             {
-                for (int pc = 0; pc < 12; pc++)
+                for (int pc = 0; pc < 62; pc++)
                 {
                     int r = pr * 2;
                     int c = pc * 2;
@@ -1138,35 +1090,28 @@ void TrainCNN()
                         {
                             if (C1Image1[r + k][c + l] > Max1)
                             {
-                                Max1 =
-                                    C1Image1[r + k][c + l];
-
+                                Max1 = C1Image1[r + k][c + l];
                                 MaxRow1 = r + k;
                                 MaxCol1 = c + l;
                             }
 
                             if (C1Image2[r + k][c + l] > Max2)
                             {
-                                Max2 =
-                                    C1Image2[r + k][c + l];
-
+                                Max2 = C1Image2[r + k][c + l];
                                 MaxRow2 = r + k;
                                 MaxCol2 = c + l;
                             }
                         }
                     }
 
-                    C1Error1[MaxRow1][MaxCol1] =
-                        C1PooledError1[pr][pc];
-
-                    C1Error2[MaxRow2][MaxCol2] =
-                        C1PooledError2[pr][pc];
+                    C1Error1[MaxRow1][MaxCol1] = C1PooledError1[pr][pc];
+                    C1Error2[MaxRow2][MaxCol2] = C1PooledError2[pr][pc];
                 }
             }
 
-            for (int r = 0; r < 24; r++)
+            for (int r = 0; r < 124; r++)
             {
-                for (int c = 0; c < 24; c++)
+                for (int c = 0; c < 124; c++)
                 {
                     if (C1Image1[r][c] <= 0.0f)
                     {
@@ -1187,17 +1132,17 @@ void TrainCNN()
                     C1DLoss1[k * 5 + l] = 0.0f;
                     C1DLoss2[k * 5 + l] = 0.0f;
 
-                    for (int r = 0; r < 24; r++)
+                    for (int r = 0; r < 124; r++)
                     {
-                        for (int c = 0; c < 24; c++)
+                        for (int c = 0; c < 124; c++)
                         {
                             C1DLoss1[k * 5 + l] +=
                                 C1Error1[r][c] *
-                                TrainingImagesData[img][r + k][c + l];
+                                TrainingImagesData[img][(r + k) * 128 + (c + l)];
 
                             C1DLoss2[k * 5 + l] +=
                                 C1Error2[r][c] *
-                                TrainingImagesData[img][r + k][c + l];
+                                TrainingImagesData[img][(r + k) * 128 + (c + l)];
                         }
                     }
                 }
@@ -1206,9 +1151,9 @@ void TrainCNN()
             float C1BiasLoss1 = 0.0f;
             float C1BiasLoss2 = 0.0f;
 
-            for (int r = 0; r < 24; r++)
+            for (int r = 0; r < 124; r++)
             {
-                for (int c = 0; c < 24; c++)
+                for (int c = 0; c < 124; c++)
                 {
                     C1BiasLoss1 += C1Error1[r][c];
                     C1BiasLoss2 += C1Error2[r][c];
@@ -1268,17 +1213,10 @@ void TrainCNN()
                 }
             }
 
-            C2F1Bias -=
-                LearningRate * C2BiasLoss1;
-
-            C2F2Bias -=
-                LearningRate * C2BiasLoss2;
-
-            C2F3Bias -=
-                LearningRate * C2BiasLoss3;
-
-            C2F4Bias -=
-                LearningRate * C2BiasLoss4;
+            C2F1Bias -= LearningRate * C2BiasLoss1;
+            C2F2Bias -= LearningRate * C2BiasLoss2;
+            C2F3Bias -= LearningRate * C2BiasLoss3;
+            C2F4Bias -= LearningRate * C2BiasLoss4;
 
             for (int k = 0; k < 5; k++)
             {
@@ -1294,28 +1232,15 @@ void TrainCNN()
                 }
             }
 
-            C1F1Bias -=
-                LearningRate * C1BiasLoss1;
-
-            C1F2Bias -=
-                LearningRate * C1BiasLoss2;
-
+            C1F1Bias -= LearningRate * C1BiasLoss1;
+            C1F2Bias -= LearningRate * C1BiasLoss2;
         }
 
-        float AverageLoss =
-            TotalLoss / images;
+        float AverageLoss = TotalLoss / images;
+        float Accuracy = (float)Correct / images * 100.0f;
 
-        float Accuracy =
-            (float)Correct / images * 100.0f;
-
-        cout << "Loss: "
-            << AverageLoss
-            << endl;
-
-        cout << "Accuracy: "
-            << Accuracy
-            << "%"
-            << endl;
+        cout << "Loss: " << AverageLoss << endl;
+        cout << "Accuracy: " << Accuracy << "%" << endl;
 
         SaveWeights();
     }

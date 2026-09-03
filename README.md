@@ -196,4 +196,20 @@ Concepts:
 Status:
 - [x] Complete
 
+### Milestone 9: Cats vs Dogs Classifier
+
+Goal:
+-   Image
+      ↓
+-    CNN
+      ↓
+- Cat or Dog
+
+Concepts:
+- Binary Classification
+- Image Recognition
+
+Status:
+- [s] Started
+
 ---
