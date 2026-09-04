@@ -209,7 +209,10 @@ Concepts:
 - Binary Classification
 - Image Recognition
 
+learned:
+- Learned that CUDA is fricking impossible to understand and that in this case my Neural Network is not learning after adding cuda for some reason
+
 Status:
-- [s] Started
+- [x] Complete
 
 ---

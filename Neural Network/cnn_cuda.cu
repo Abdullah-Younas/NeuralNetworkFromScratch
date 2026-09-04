@@ -63,7 +63,7 @@ __global__ void C1ConvolutionKernel(
     if (x >= 124 || y >= 124 || filter >= 2)
         return;
 
-    float sum = 0.0f;
+    float sum = biases[filter];
 
     for (int k = 0; k < 5; k++)
     {
@@ -76,10 +76,10 @@ __global__ void C1ConvolutionKernel(
     }
 
     output[
-        filter * 124 * 124 +
+        filter * 15376 +
             y * 124 +
             x
-    ] = ReLUDevice(sum + biases[filter]);
+    ] = ReLUDevice(sum);
 }
 
 __global__ void MaxPoolC1Kernel(
@@ -95,7 +95,7 @@ __global__ void MaxPoolC1Kernel(
 
     int r = y * 2;
     int c = x * 2;
-    int base = channel * 124 * 124;
+    int base = channel * 15376;
 
     float a = input[base + r * 124 + c];
     float b = input[base + r * 124 + c + 1];
@@ -133,7 +133,7 @@ __global__ void C2ConvolutionKernel(
     if (x >= 60 || y >= 60 || filter >= 4)
         return;
 
-    float sum = 0.0f;
+    float sum = biases[filter];
 
     for (int channel = 0; channel < 2; channel++)
     {
@@ -161,7 +161,7 @@ __global__ void C2ConvolutionKernel(
         filter * 3600 +
             y * 60 +
             x
-    ] = ReLUDevice(sum + biases[filter]);
+    ] = ReLUDevice(sum);
 }
 
 __global__ void MaxPoolC2Kernel(
@@ -453,7 +453,7 @@ __global__ void C2GradientKernel(
     }
 
     if (thread == 0)
-        gradients[weightIndex] = shared[0];
+        gradients[weightIndex] = shared[0] / 3600.0f;
 }
 
 __global__ void C2BiasGradientKernel(
@@ -492,7 +492,7 @@ __global__ void C2BiasGradientKernel(
     }
 
     if (thread == 0)
-        gradients[filter] = shared[0];
+        gradients[filter] = shared[0] / 3600.0f;
 }
 
 __global__ void C1PooledErrorKernel(
@@ -681,7 +681,7 @@ __global__ void C1GradientKernel(
     }
 
     if (thread == 0)
-        gradients[weightIndex] = shared[0];
+        gradients[weightIndex] = shared[0] / 15376.0f;
 }
 
 __global__ void C1BiasGradientKernel(
@@ -720,7 +720,7 @@ __global__ void C1BiasGradientKernel(
     }
 
     if (thread == 0)
-        gradients[filter] = shared[0];
+        gradients[filter] = shared[0] / 15376.0f;
 }
 
 __global__ void UpdateWeightsKernel(
@@ -742,8 +742,8 @@ __global__ void UpdateWeightsKernel(
 __global__ void UpdateBiasesKernel(
     float* c1Biases,
     float* c2Biases,
-    float* c1Gradients,
-    float* c2Gradients,
+    const float* c1Gradients,
+    const float* c2Gradients,
     float learningRate)
 {
     int index = threadIdx.x;
@@ -867,7 +867,8 @@ void InitializeCNN_CUDA(
 void TrainImageCUDA(
     const float* input,
     int label,
-    float LearningRate,
+    float DenseLearningRate,
+    float ConvLearningRate,
     float* Probabilities,
     float& Loss,
     int& Prediction)
@@ -894,6 +895,8 @@ void TrainImageCUDA(
         d_C1Biases
         );
 
+    CheckCUDA(cudaGetLastError());
+
     dim3 blocksPool1(
         (62 + 15) / 16,
         (62 + 15) / 16,
@@ -904,6 +907,8 @@ void TrainImageCUDA(
         d_C1Images,
         d_C1ImagesPooled
         );
+
+    CheckCUDA(cudaGetLastError());
 
     dim3 blocksC2(
         (60 + 15) / 16,
@@ -918,6 +923,8 @@ void TrainImageCUDA(
         d_C2Biases
         );
 
+    CheckCUDA(cudaGetLastError());
+
     dim3 blocksPool2(
         (30 + 15) / 16,
         (30 + 15) / 16,
@@ -929,6 +936,8 @@ void TrainImageCUDA(
         d_C2ImagesPooled
         );
 
+    CheckCUDA(cudaGetLastError());
+
     int blockSize = 256;
 
     FlattenKernel << <
@@ -939,6 +948,8 @@ void TrainImageCUDA(
             d_FlatPixelValues
             );
 
+    CheckCUDA(cudaGetLastError());
+
     DenseForwardKernel << <1, 32 >> > (
         d_FlatPixelValues,
         d_DenseWeights,
@@ -946,10 +957,14 @@ void TrainImageCUDA(
         d_Output
         );
 
+    CheckCUDA(cudaGetLastError());
+
     SoftmaxKernel << <1, 1 >> > (
         d_Output,
         d_Probabilities
         );
+
+    CheckCUDA(cudaGetLastError());
 
     CheckCUDA(cudaMemcpy(
         Probabilities,
@@ -976,6 +991,8 @@ void TrainImageCUDA(
         label
         );
 
+    CheckCUDA(cudaGetLastError());
+
     FlatErrorKernel << <
         (3600 + blockSize - 1) / blockSize,
         blockSize
@@ -985,6 +1002,8 @@ void TrainImageCUDA(
             d_FlatError
             );
 
+    CheckCUDA(cudaGetLastError());
+
     DenseUpdateKernel << <
         (7200 + blockSize - 1) / blockSize,
         blockSize
@@ -993,8 +1012,10 @@ void TrainImageCUDA(
             d_OutputBiases,
             d_OutputError,
             d_FlatPixelValues,
-            LearningRate
-            );
+            DenseLearningRate   // <-- was LearningRate
+        );
+
+    CheckCUDA(cudaGetLastError());
 
     dim3 blocksC2PoolBack(
         (30 + 15) / 16,
@@ -1011,6 +1032,8 @@ void TrainImageCUDA(
             d_C2Error
             );
 
+    CheckCUDA(cudaGetLastError());
+
     C2ReluBackwardKernel << <
         (14400 + blockSize - 1) / blockSize,
         blockSize
@@ -1019,16 +1042,22 @@ void TrainImageCUDA(
             d_C2Error
             );
 
+    CheckCUDA(cudaGetLastError());
+
     C2GradientKernel << <72, 256 >> > (
         d_C2Error,
         d_C1ImagesPooled,
         d_C2DLoss
         );
 
+    CheckCUDA(cudaGetLastError());
+
     C2BiasGradientKernel << <4, 256 >> > (
         d_C2Error,
         d_C2BiasLoss
         );
+
+    CheckCUDA(cudaGetLastError());
 
     C1PooledErrorKernel << <
         (7688 + blockSize - 1) / blockSize,
@@ -1038,6 +1067,8 @@ void TrainImageCUDA(
             d_C2Filters,
             d_C1PooledError
             );
+
+    CheckCUDA(cudaGetLastError());
 
     dim3 blocksC1PoolBack(
         (62 + 15) / 16,
@@ -1054,6 +1085,8 @@ void TrainImageCUDA(
             d_C1Error
             );
 
+    CheckCUDA(cudaGetLastError());
+
     C1ReluBackwardKernel << <
         (30752 + blockSize - 1) / blockSize,
         blockSize
@@ -1062,16 +1095,22 @@ void TrainImageCUDA(
             d_C1Error
             );
 
+    CheckCUDA(cudaGetLastError());
+
     C1GradientKernel << <50, 256 >> > (
         d_C1Error,
         d_Input,
         d_C1DLoss
         );
 
+    CheckCUDA(cudaGetLastError());
+
     C1BiasGradientKernel << <2, 256 >> > (
         d_C1Error,
         d_C1BiasLoss
         );
+
+    CheckCUDA(cudaGetLastError());
 
     UpdateWeightsKernel << <
         (72 + blockSize - 1) / blockSize,
@@ -1080,8 +1119,10 @@ void TrainImageCUDA(
             d_C2Filters,
             d_C2DLoss,
             72,
-            LearningRate
+            ConvLearningRate   // <-- was LearningRate
             );
+
+    CheckCUDA(cudaGetLastError());
 
     UpdateWeightsKernel << <
         (50 + blockSize - 1) / blockSize,
@@ -1090,15 +1131,17 @@ void TrainImageCUDA(
             d_C1Filters,
             d_C1DLoss,
             50,
-            LearningRate
+            ConvLearningRate   // <-- was LearningRate
             );
+
+    CheckCUDA(cudaGetLastError());
 
     UpdateBiasesKernel << <1, 4 >> > (
         d_C1Biases,
         d_C2Biases,
         d_C1BiasLoss,
         d_C2BiasLoss,
-        LearningRate
+        ConvLearningRate   // <-- was LearningRate
         );
 
     CheckCUDA(cudaGetLastError());

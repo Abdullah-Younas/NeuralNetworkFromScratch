@@ -16,7 +16,8 @@ void InitializeCNN_CUDA(
 void TrainImageCUDA(
     const float* input,
     int label,
-    float LearningRate,
+    float DenseLearningRate,
+    float ConvLearningRate,
     float* Probabilities,
     float& Loss,
     int& Prediction
