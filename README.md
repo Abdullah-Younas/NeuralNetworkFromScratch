@@ -13,10 +13,10 @@ Learn how neural networks, computer vision, and language models work from first 
 - [x] Milestone 3: Multiple Neurons
 - [x] Milestone 4: Teach The Network
 - [x] Milestone 5: Backpropagation
-- [ ] Milestone 6: Train Neural Network On Real Dataset
-- [ ] Milestone 7: MNIST Digit Recognition
-- [ ] Milestone 8: CNNs
-- [ ] Milestone 9: Cats vs Dogs
+- [x] Milestone 6: Train Neural Network On Real Dataset
+- [x] Milestone 7: MNIST Digit Recognition
+- [x] Milestone 8: CNNs
+- [x] Milestone 9: Cats vs Dogs
 - [ ] Milestone 10: Language Models
 - [ ] Milestone 11: Transformers
 
