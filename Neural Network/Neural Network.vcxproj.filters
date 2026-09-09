@@ -20,57 +20,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="TrainingDataHumanClassifier.txt" />
-    <Text Include="Weights.txt">
+    <Text Include="training.txt">
       <Filter>Source Files</Filter>
     </Text>
-    <Text Include="Biases.txt">
-      <Filter>Source Files</Filter>
-    </Text>
-    <Text Include="C1Weights.txt">
-      <Filter>Source Files</Filter>
-    </Text>
-    <Text Include="C2Weights.txt">
-      <Filter>Source Files</Filter>
-    </Text>
-    <Text Include="DenseWeights.txt">
-      <Filter>Source Files</Filter>
-    </Text>
-    <Text Include="OutputBiases.txt">
-      <Filter>Source Files</Filter>
-    </Text>
-    <Text Include="C1C2Biases.txt">
-      <Filter>Source Files</Filter>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="t10k-images-idx3-ubyte">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="t10k-labels-idx1-ubyte">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="train-images-idx3-ubyte">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="train-labels-idx1-ubyte">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="stb_image.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stb_image_resize2.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cnn_cuda.cuh">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="cnn_cuda.cu">
-      <Filter>Source Files</Filter>
-    </CudaCompile>
   </ItemGroup>
 </Project>

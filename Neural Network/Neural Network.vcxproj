@@ -149,28 +149,7 @@
     <ClCompile Include="Neural Network.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Biases.txt" />
-    <Text Include="C1C2Biases.txt" />
-    <Text Include="C1Weights.txt" />
-    <Text Include="C2Weights.txt" />
-    <Text Include="DenseWeights.txt" />
-    <Text Include="OutputBiases.txt" />
-    <Text Include="TrainingDataHumanClassifier.txt" />
-    <Text Include="Weights.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="t10k-images-idx3-ubyte" />
-    <None Include="t10k-labels-idx1-ubyte" />
-    <None Include="train-images-idx3-ubyte" />
-    <None Include="train-labels-idx1-ubyte" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="cnn_cuda.cuh" />
-    <ClInclude Include="stb_image.h" />
-    <ClInclude Include="stb_image_resize2.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="cnn_cuda.cu" />
+    <Text Include="training.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
