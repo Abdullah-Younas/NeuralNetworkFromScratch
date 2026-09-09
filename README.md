@@ -215,25 +215,4 @@ learned:
 Status:
 - [x] Complete
 
-### Milestone 10: Character-Level Language Model
-
-Goal:
-Input:
-"h"
-Output probabilities:
-e : 70%
-i : 20%
-a : 10%
-Then generate text one character at a time.
-
-Concepts:
- Tokens 
- Sequences 
- Probability distributions 
- Text generation 
- Cross-entropy loss 
-
-Status:
-- [s] Started
-
 ---
