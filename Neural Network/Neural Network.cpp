@@ -53,15 +53,15 @@ int main()
     ReadingTrainingText();
     AssigningCharIndexes();
 
-    auto it = CharacterIndexes.find('a');
+    auto it = CharacterIndexes.find('b');
 
     if (it != CharacterIndexes.end())
     {
-        cout << "Index of a: " << it->second << endl;
+        cout << "Index of b: " << it->second << endl;
     }
     else
     {
-        cout << "'a' is not in the training data\n";
+        cout << "'b' is not in the training data\n";
     }
 
     return 0;

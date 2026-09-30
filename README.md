@@ -17,8 +17,7 @@ Learn how neural networks, computer vision, and language models work from first 
 - [x] Milestone 7: MNIST Digit Recognition
 - [x] Milestone 8: CNNs
 - [x] Milestone 9: Cats vs Dogs
-- [ ] Milestone 10: Language Models
-- [ ] Milestone 11: Transformers
+- [ ] Milestone 10: Transformers
 
 ---
 
@@ -64,7 +63,7 @@ Status:
 
 ---
 
-### Milestone 3: Multiple Neurons
+### Milestone 3: Multiple Neurons ✅
 
 Build a small feed-forward neural network.
 
@@ -104,7 +103,7 @@ Status:
 
 ---
 
-### Milestone 4 - Loss Functions
+### Milestone 4 - Loss Functions ✅
 
 because now you have a network that can actually make mistakes.
 
@@ -120,7 +119,7 @@ Status:
 
 ---
 
-## Milestone 5 - Backpropagation
+## Milestone 5 - Backpropagation ✅
 
 Implemented backpropagation from scratch in C++.
 
@@ -147,7 +146,7 @@ The network successfully reduced prediction error over multiple epochs, demonstr
 Status:
 - [x] Complete
 
-## Milestone 6 - Train Neural Network On Real Dataset
+## Milestone 6 - Train Neural Network On Real Dataset ✅
 
 Finally Complete my Human Classifies
 
@@ -164,7 +163,7 @@ The network trained this way performs with extreme probability and produces almo
 Status:
 - [x] Complete
 
-## Milestone 7 Completed - MNIST Neural Network C++
+## Milestone 7 Completed - MNIST Neural Network C++ ✅
 
 Built and trained a neural network from scratch in C++ on MNIST.
 
@@ -179,7 +178,7 @@ God damn
 Status:
 - [x] Complete
 
-## Milestone 8: Convolutional Neural Networks (CNNs)
+## Milestone 8: Convolutional Neural Networks (CNNs) ✅
 
 Research:
 - Convolution
@@ -196,7 +195,7 @@ Concepts:
 Status:
 - [x] Complete
 
-### Milestone 9: Cats vs Dogs Classifier
+### Milestone 9: Cats vs Dogs Classifier ✅
 
 Goal:
 -   Image
@@ -215,25 +214,52 @@ learned:
 Status:
 - [x] Complete
 
-### Milestone 10: Character-Level Language Model
+### Milestone 10: TRANSFORMERS  ✅
+
+If you want the **Transformers milestone** in the same style as your previous milestones, I'd make it:
+
+### Milestone 10: TRANSFORMERS
 
 Goal:
-- Input:
-- "h"
-- Output probabilities:
-- e : 70%
-- i : 20%
-- a : 10%
-- Then generate text one character at a time.
+
+* Input:
+
+  * "h"
+* Convert input into tokens
+* Pass tokens through:
+
+  * Embeddings
+  * Positional encoding
+  * Self-attention
+  * Multi-head attention
+  * Feed-forward network
+  * Transformer blocks
+* Output probabilities:
+
+  * e : 70%
+  * i : 20%
+  * a : 10%
+* Select the next token
+* Repeat to generate text one token at a time.
 
 Concepts:
-- Tokens 
-- Sequences 
-- Probability distributions 
-- Text generation 
-- Cross-entropy loss 
+
+* Tokens
+* Vocabulary
+* Token embeddings
+* Sequences
+* Positional encoding
+* Query, Key, Value
+* Self-attention
+* Multi-head attention
+* Causal masking
+* Transformer blocks
+* Residual connections
+* Layer normalization
+* Text generation
 
 Status:
-- [x] Started
+
+* [x] Started
 
 ---
