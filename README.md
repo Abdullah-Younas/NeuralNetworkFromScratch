@@ -216,10 +216,6 @@ Status:
 
 ### Milestone 10: TRANSFORMERS  ✅
 
-If you want the **Transformers milestone** in the same style as your previous milestones, I'd make it:
-
-### Milestone 10: TRANSFORMERS
-
 Goal:
 
 * Input:
