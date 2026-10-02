@@ -11,20 +11,33 @@
 
 using namespace std;
 
-unordered_map<char, int> CharacterIndexes;
-vector<char> IndexToCharacter;
+unordered_map<char, int> CharacterTokens;
+vector<char> TokensToCharacter;
 string book;
 
-void AssigningCharIndexes()
+vector<int> BookTokens;
+
+void TokenizeBook(){
+	for (char character : book){
+		auto token = CharacterTokens.find(character);
+
+		if (token != CharacterTokens.end())
+		{
+			BookTokens.push_back(token->second);
+		}
+	}
+}
+
+void AssigningCharTokens()
 {
     int index = 0;
 
     for (char character : book)
     {
-        if (CharacterIndexes.find(character) == CharacterIndexes.end())
+        if (CharacterTokens.find(character) == CharacterTokens.end())
         {
-            CharacterIndexes[character] = index;
-            IndexToCharacter.push_back(character);
+            CharacterTokens[character] = index;
+            TokensToCharacter.push_back(character);
 
             index++;
         }
@@ -51,18 +64,17 @@ void ReadingTrainingText()
 int main()
 {
     ReadingTrainingText();
-    AssigningCharIndexes();
+    AssigningCharTokens();
+	TokenizeBook();
 
-    auto it = CharacterIndexes.find('b');
+	cout << "Vocabulary size: " << CharacterTokens.size() << endl;
+    cout << "Book token count: " << BookTokens.size() << endl;
 
-    if (it != CharacterIndexes.end())
+    for (int token : BookTokens)
     {
-        cout << "Index of b: " << it->second << endl;
+        cout << token << " ";
     }
-    else
-    {
-        cout << "'b' is not in the training data\n";
-    }
+
 
     return 0;
 }
